@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+*.blend1
+*.blend2
+/dist/
+/tests/_output/
+.DS_Store
+.vscode/
+.idea/

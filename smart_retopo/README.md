@@ -1,0 +1,52 @@
+# Smart Retopo (Blender 4.2+)
+
+Combines meshes, retopologizes them with QuadriFlow, generates new UVs and bakes the original surface onto the new mesh with Cycles.
+
+## Install
+
+Edit > Preferences > Get Extensions > ⌄ > **Install from Disk…** and pick `smart_retopo.zip`.
+(Legacy: Preferences > Add-ons > Install also works, via `bl_info`.)
+
+## Use (UI)
+
+Select one or more objects → **View3D sidebar (N) > Smart Retopo** → set options → **Smart Retopo**.
+Also available in **Object** menu.
+
+## Pipeline
+
+1. **Combine**: evaluates each selected object (modifiers applied, curves/text converted), bakes world transforms and joins them into `<name>_high`. The originals stay untouched.
+2. **Retopo**: cleans up the mesh (merge by distance, removes loose verts, recalculates normals), then runs QuadriFlow to `target_faces`. With *Voxel Pre-pass = Auto*, a voxel remesh runs first when several objects are combined or the mesh is non-manifold, and also as a fallback if QuadriFlow fails. That gives QuadriFlow a watertight shell.
+3. **UVs**: Smart UV Project (or Lightmap Pack), then rotates and packs the islands.
+4. **Bake**: Cycles selected-to-active from high to low. Base Color, Roughness and Metallic are taken straight from each Principled BSDF input through a temporary emission swap, so lighting doesn't affect them and metals don't bake black. Normal (tangent), AO and Emission use the native bake types. The baked maps are wired into a new Principled material. The cage extrusion and ray distance are set automatically from the bounding box when left at 0.
+
+## Automation
+
+```python
+import bpy, json
+bpy.ops.object.smart_retopo(target_faces=3000, texture_size=1024,
+                            bake_maps={'BASE_COLOR', 'NORMAL', 'ROUGHNESS'},
+                            output_dir="/tmp/textures")
+result = json.loads(bpy.context.window_manager["smart_retopo_last_result"])
+```
+
+Calling the operator from Python skips the panel settings and uses the arguments you pass (or the defaults). When you click the button, it uses the panel settings.
+
+## Headless / CLI
+
+```
+blender -b -P smart_retopo/cli.py -- -i in.glb -o out.glb --faces 4000 --size 2048 \
+    --maps BASE_COLOR NORMAL ROUGHNESS METALLIC --report result.json
+```
+
+This runs without installing the add-on. Supported inputs are blend, glb/gltf, fbx, obj, ply, stl and usd. Supported outputs are glb/gltf, fbx, obj, usd and blend. It prints `SMART_RETOPO_RESULT: {json}` and exits with code 1 on failure. `--settings-json` takes any `RetopoSettings` field as a JSON string or file.
+
+## Result JSON
+
+`object_name, material_name, source_objects, source_faces, result_faces, used_voxel_remesh, images{map: path|"<packed>"}, timings{combine,retopo,uv,bake,total}`
+
+## Notes
+
+- The operator blocks the UI while it runs. QuadriFlow at high face counts and big bakes can take minutes.
+- QuadriFlow face counts are approximate.
+- Only Principled BSDF inputs are read for socket maps. Other shaders fall back to defaults.
+- AO is baked but not wired into the material, because Principled has no AO input.

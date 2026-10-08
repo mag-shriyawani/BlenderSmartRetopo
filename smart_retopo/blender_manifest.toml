@@ -1,0 +1,15 @@
+schema_version = "1.0.0"
+
+id = "smart_retopo"
+version = "1.0.0"
+name = "Smart Retopo"
+tagline = "Combine, QuadriFlow retopologize, unwrap and bake meshes"
+maintainer = "Magnopus"
+type = "add-on"
+
+blender_version_min = "4.2.0"
+license = ["SPDX:GPL-3.0-or-later"]
+tags = ["Mesh", "Bake"]
+
+[permissions]
+files = "Writes baked textures and exported meshes to disk"
