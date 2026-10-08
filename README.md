@@ -9,7 +9,7 @@ Usage, options, Python API and CLI: see [`smart_retopo/README.md`](smart_retopo/
 
 | Path | |
 |---|---|
-| `smart_retopo/` | The extension package (`blender_manifest.toml`, operator, panel, `core.py` pipeline, `cli.py` headless runner) |
+| `smart_retopo/` | The extension package (`blender_manifest.toml`, operator, panel, `core/` pipeline package (one module per step), `cli.py` headless runner) |
 | `tests/test_pipeline.py` | End-to-end test: builds a scene, runs the operator, asserts on mesh/UVs/baked maps |
 | `scripts/build.sh` | Builds the installable zip into `dist/` |
 

@@ -1,0 +1,30 @@
+"""Smart Retopo core pipeline.
+
+Pure functions with no UI/registration dependencies so the pipeline can be
+driven from the operator, from a headless ``blender -b`` script, or from an
+MCP / Nodey bridge.
+
+Pipeline (one module per step):
+    1. combine.py  - evaluate & merge source objects into one world-space mesh
+    2. retopo.py   - (optional voxel clean-up) + QuadriFlow remesh
+    3. uv.py       - Smart UV Project / Lightmap Pack + island packing
+    4. bake.py     - Cycles selected-to-active bake of high -> low
+    pipeline.py    - smart_retopo(): runs all of the above
+"""
+
+if "bpy" in locals():
+    import importlib
+    from . import settings, utils, combine, retopo, uv, bake, pipeline
+    for _m in (settings, utils, combine, retopo, uv, bake, pipeline):
+        importlib.reload(_m)
+
+import bpy  # noqa: E402
+
+from .settings import (  # noqa: E402,F401
+    ALL_MAPS, CONVERTIBLE_TYPES, ProgressFn, RetopoResult, RetopoSettings, SmartRetopoError,
+)
+from .combine import combine_meshes  # noqa: E402,F401
+from .retopo import retopologize, voxel_remesh  # noqa: E402,F401
+from .uv import generate_uvs  # noqa: E402,F401
+from .bake import BAKE_DEFS, IMAGE_EXT, bake_textures  # noqa: E402,F401
+from .pipeline import smart_retopo  # noqa: E402,F401
