@@ -23,9 +23,13 @@ blender -b --factory-startup -P tests/test_pipeline.py
 # Build the extension zip
 ./scripts/build.sh            # -> dist/smart_retopo-<version>.zip
 
-# Live-develop: symlink the package into Blender's user extensions repo
-ln -s "$PWD/smart_retopo" \
-  "$HOME/Library/Application Support/Blender/<version>/extensions/user_default/smart_retopo"
+# Live-develop (macOS): symlink the package into Blender's user extensions repo.
+# Run from the repo root; set BV to your Blender version (e.g. 5.2).
+BV=5.2
+mkdir -p "$HOME/Library/Application Support/Blender/$BV/extensions/user_default"
+ln -sfn "$(git rev-parse --show-toplevel)/smart_retopo" \
+  "$HOME/Library/Application Support/Blender/$BV/extensions/user_default/smart_retopo"
+# Then in Blender: Preferences > Get Extensions > Refresh, and enable "Smart Retopo".
 ```
 
 Headless run:
