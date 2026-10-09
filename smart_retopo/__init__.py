@@ -8,16 +8,6 @@ or headless:
     blender -b -P smart_retopo/cli.py -- --input in.glb --output out.glb --faces 3000
 """
 
-bl_info = {
-    "name": "Smart Retopo",
-    "author": "Magnopus",
-    "version": (1, 0, 0),
-    "blender": (4, 2, 0),
-    "location": "View3D > Sidebar > Smart Retopo",
-    "description": "Combine meshes, retopologize with QuadriFlow, generate UVs and bake textures with Cycles",
-    "category": "Mesh",
-}
-
 if "bpy" in locals():
     import importlib
     from . import core, props, operators, ui

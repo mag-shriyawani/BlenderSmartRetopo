@@ -1,0 +1,90 @@
+name: Release
+
+# Every push to main updates the release-please Release PR. Merging that PR
+# tags vX.Y.Z and creates a draft release; this workflow then builds, tests,
+# attests and uploads the extension zip, and publishes the release.
+# Releases are immutable once published, so assets go up while it is a draft.
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      created: ${{ steps.rp.outputs.release_created }}
+      tag: ${{ steps.rp.outputs.tag_name }}
+    steps:
+      - id: rp
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  build:
+    needs: release-please
+    if: needs.release-please.outputs.created == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    env:
+      TAG: ${{ needs.release-please.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag }}
+          persist-credentials: false
+      - name: Version matches tag
+        run: python3 tests/ci/check_version.py "$TAG"
+      - uses: ./.github/actions/setup-blender
+        with:
+          series: "5.2"
+      - name: Validate extension
+        run: blender --command extension validate smart_retopo
+      - name: End-to-end pipeline test
+        run: blender -b --factory-startup --python-exit-code 1 -P tests/test_pipeline.py
+      - name: Build extension
+        run: mkdir -p dist && blender --command extension build --source-dir smart_retopo --output-dir dist
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum ./*.zip > SHA256SUMS && cat SHA256SUMS
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*.zip
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    needs: [release-please, build]
+    runs-on: ubuntu-24.04
+    environment: release
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.release-please.outputs.tag }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist
+      - name: Upload assets to the draft release
+        run: gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY"
+      - name: Publish release
+        run: gh release edit "$TAG" --draft=false --latest --repo "$GITHUB_REPOSITORY"

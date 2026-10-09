@@ -43,6 +43,12 @@ See [`smart_retopo/README.md`](smart_retopo/README.md).
 blender -b --factory-startup -P tests/test_pipeline.py
 #   ...or with the bpy wheel:  pip install bpy && python tests/test_pipeline.py
 
+# Lint (same check as CI)
+ruff check .
+
+# Check the manifest version (add a tag, e.g. v0.2.0, to check it matches)
+python3 tests/ci/check_version.py
+
 # Build the extension zip
 ./scripts/build.sh            # -> dist/smart_retopo-<version>.zip
 
@@ -61,4 +67,21 @@ Headless run:
 blender -b -P smart_retopo/cli.py -- -i in.glb -o out.glb --faces 4000 --report result.json
 ```
 
-Tested with Blender 5.2 LTS.
+## Releasing
+
+Releases are automated with [release-please](https://github.com/googleapis/release-please):
+
+1. Merge PRs to `main` with [Conventional Commit](https://www.conventionalcommits.org/) titles (`feat: …`, `fix: …`). CI enforces this.
+2. release-please keeps a `chore(main): release X.Y.Z` PR open with the version bump and `CHANGELOG.md`.
+3. Merging that PR tags `vX.Y.Z`. The release workflow then builds, tests and attests the zip, uploads it with `SHA256SUMS`, and publishes the GitHub Release.
+
+Never edit the version in `blender_manifest.toml` by hand. While on 0.x, breaking changes bump the minor version.
+
+Verify a downloaded release:
+
+```sh
+sha256sum -c SHA256SUMS
+gh attestation verify smart_retopo-X.Y.Z.zip -R magnopus/BlenderSmartRetopo
+```
+
+Supports Blender 5.0 and later. CI tests 5.0 and 5.2 LTS.

@@ -1,11 +1,10 @@
-# Smart Retopo (Blender 4.2+)
+# Smart Retopo (Blender 5.0+)
 
 Combines meshes, retopologizes them with QuadriFlow, generates new UVs and bakes the original surface onto the new mesh with Cycles.
 
 ## Install
 
-Edit > Preferences > Get Extensions > ⌄ > **Install from Disk…** and pick `smart_retopo.zip`.
-(Legacy: Preferences > Add-ons > Install also works, via `bl_info`.)
+Download `smart_retopo-<version>.zip` from the repo's [Releases](https://github.com/magnopus/BlenderSmartRetopo/releases) page, then Edit > Preferences > Get Extensions > ⌄ > **Install from Disk…** and pick the zip.
 
 ## Use (UI)
 

@@ -1,0 +1,78 @@
+name: Set up Blender
+description: >
+  Download the latest official Linux x64 build of a Blender series from
+  download.blender.org, verify its SHA-256, cache it and put `blender` on PATH.
+
+inputs:
+  series:
+    description: Blender major.minor series, e.g. "5.0" or "5.2". The newest patch release is used.
+    required: true
+
+outputs:
+  version:
+    description: The exact Blender version installed, e.g. "5.2.2".
+    value: ${{ steps.resolve.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - id: resolve
+      shell: bash
+      env:
+        SERIES: ${{ inputs.series }}
+      run: |
+        set -euo pipefail
+        [[ "$SERIES" =~ ^[0-9]+\.[0-9]+$ ]] || { echo "::error::series must look like 5.2, got '$SERIES'"; exit 1; }
+        base="https://download.blender.org/release/Blender${SERIES}"
+        file=$(curl -fsSL --retry 3 "$base/" \
+          | grep -oE "blender-${SERIES//./\\.}\.[0-9]+-linux-x64\.tar\.xz" \
+          | sort -uV | tail -1)
+        [[ -n "$file" ]] || { echo "::error::no Linux build found for Blender $SERIES"; exit 1; }
+        version="${file#blender-}"; version="${version%-linux-x64.tar.xz}"
+        {
+          echo "version=$version"
+          echo "file=$file"
+          echo "url=$base/$file"
+          echo "sums=$base/blender-$version.sha256"
+          echo "dir=$RUNNER_TOOL_CACHE/blender/$version"
+        } >> "$GITHUB_OUTPUT"
+        echo "Resolved Blender $SERIES -> $version"
+
+    - id: cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.resolve.outputs.dir }}
+        key: blender-${{ steps.resolve.outputs.version }}-linux-x64
+
+    - if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        URL: ${{ steps.resolve.outputs.url }}
+        SUMS: ${{ steps.resolve.outputs.sums }}
+        FILE: ${{ steps.resolve.outputs.file }}
+        DIR: ${{ steps.resolve.outputs.dir }}
+      run: |
+        set -euo pipefail
+        tmp=$(mktemp -d)
+        curl -fsSL --retry 3 -o "$tmp/$FILE" "$URL"
+        curl -fsSL --retry 3 -o "$tmp/sums" "$SUMS"
+        expected=$(grep -E "[ *]${FILE}\$" "$tmp/sums" | awk '{print $1}')
+        [[ -n "$expected" ]] || { echo "::error::no checksum for $FILE"; exit 1; }
+        (cd "$tmp" && echo "$expected  $FILE" | sha256sum -c -)
+        mkdir -p "$DIR"
+        tar -xJf "$tmp/$FILE" -C "$DIR" --strip-components=1
+        rm -rf "$tmp"
+
+    - shell: bash
+      run: |
+        # Runtime libraries headless Blender needs on a bare Ubuntu runner.
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq --no-install-recommends \
+          libegl1 libgl1 libsm6 libxi6 libxkbcommon0 libxrender1 libxfixes3 libxxf86vm1 >/dev/null
+
+    - shell: bash
+      env:
+        DIR: ${{ steps.resolve.outputs.dir }}
+      run: |
+        echo "$DIR" >> "$GITHUB_PATH"
+        "$DIR/blender" --version | head -1

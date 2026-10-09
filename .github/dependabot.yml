@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # Keeps the commit-SHA pins in workflows and the composite action current.
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/setup-blender
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ["*"]
