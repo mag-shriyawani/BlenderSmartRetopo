@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Magnopus LLC
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 version: 2
 updates:
   # Keeps the commit-SHA pins in workflows and the composite action current.

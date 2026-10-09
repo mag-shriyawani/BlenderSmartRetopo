@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Magnopus LLC
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Shared property definitions (used by the scene settings group and the operator)."""
 
 from bpy.props import BoolProperty, EnumProperty, FloatProperty, IntProperty, StringProperty

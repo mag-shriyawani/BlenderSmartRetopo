@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Magnopus LLC
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Check the extension version in smart_retopo/blender_manifest.toml.
 
     python3 tests/ci/check_version.py            # manifest version is valid SemVer

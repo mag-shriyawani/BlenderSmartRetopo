@@ -85,3 +85,17 @@ gh attestation verify smart_retopo-X.Y.Z.zip -R magnopus/BlenderSmartRetopo
 ```
 
 Supports Blender 5.0 and later. CI tests 5.0 and 5.2 LTS.
+
+## License
+
+Copyright 2026 Magnopus LLC.
+
+Smart Retopo is free software, licensed under the [GNU General Public License v3.0 or later](LICENSE) (`GPL-3.0-or-later`), the same license family as Blender. Anyone you give the extension to receives the same rights: to run, study, modify and share it, provided derived versions stay under the GPL.
+
+- `LICENSE` and `LICENSES/GPL-3.0-or-later.txt` hold the full license text, and `smart_retopo/LICENSE` ships inside every release zip.
+- Every file carries an SPDX header, or is covered by `REUSE.toml`. CI runs [`reuse lint`](https://reuse.software/) to keep it that way, so add this header to new source files:
+
+  ```python
+  # SPDX-FileCopyrightText: 2026 Magnopus LLC
+  # SPDX-License-Identifier: GPL-3.0-or-later
+  ```

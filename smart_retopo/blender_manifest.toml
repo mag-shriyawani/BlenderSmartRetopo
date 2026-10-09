@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Magnopus LLC
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 schema_version = "1.0.0"
 
 id = "smart_retopo"
@@ -9,6 +12,7 @@ type = "add-on"
 
 blender_version_min = "5.0.0"
 license = ["SPDX:GPL-3.0-or-later"]
+copyright = ["2026 Magnopus LLC"]
 tags = ["Mesh", "Bake"]
 
 [permissions]

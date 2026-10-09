@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: 2026 Magnopus LLC
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Build the installable extension zip into dist/.
 # Uses Blender's extension builder if `blender` is on PATH (or $BLENDER), else plain zip.
 set -euo pipefail

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Magnopus LLC
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Pipeline step 1: evaluate & merge source objects into one world-space mesh."""
 
 from __future__ import annotations

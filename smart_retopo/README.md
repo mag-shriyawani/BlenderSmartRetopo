@@ -49,3 +49,7 @@ This runs without installing the add-on. Supported inputs are blend, glb/gltf, f
 - QuadriFlow face counts are approximate.
 - Only Principled BSDF inputs are read for socket maps. Other shaders fall back to defaults.
 - AO is baked but not wired into the material, because Principled has no AO input.
+
+## License
+
+Copyright 2026 Magnopus LLC. Licensed under the GNU General Public License v3.0 or later; see `LICENSE` in this package.

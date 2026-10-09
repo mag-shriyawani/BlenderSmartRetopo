@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Magnopus LLC
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Pipeline step 3: Smart UV Project / Lightmap Pack + island packing."""
 
 from __future__ import annotations

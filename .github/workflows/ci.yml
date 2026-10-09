@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Magnopus LLC
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 name: CI
 
 on:
@@ -26,6 +29,10 @@ jobs:
         run: pipx run ruff==0.16.8 check --output-format github .
       - name: Manifest version
         run: python3 tests/ci/check_version.py
+      - name: REUSE compliance (every file has copyright + license info)
+        run: pipx run reuse==6.2.0 lint
+      - name: License copies are identical
+        run: cmp LICENSES/GPL-3.0-or-later.txt LICENSE && cmp LICENSES/GPL-3.0-or-later.txt smart_retopo/LICENSE
 
   pr-title:
     # Squash-merge titles drive release-please, so they must be Conventional Commits.

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Magnopus LLC
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Smart Retopo - combine, QuadriFlow retopologize, UV unwrap and Cycles-bake meshes.
 
 Automation:

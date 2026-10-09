@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Magnopus LLC
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Tooling config only; the extension itself is packaged from smart_retopo/blender_manifest.toml.
 [tool.ruff]
 line-length = 120

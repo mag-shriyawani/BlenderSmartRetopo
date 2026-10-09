@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Magnopus LLC
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Scene / mesh helpers shared by the pipeline steps."""
 
 from __future__ import annotations

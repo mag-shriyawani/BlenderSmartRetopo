@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Magnopus LLC
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """End-to-end Smart Retopo test.
 
 Run with Blender:   blender -b --factory-startup -P tests/test_pipeline.py

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Magnopus LLC
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Headless Smart Retopo runner.
 
     blender -b -P smart_retopo/cli.py -- --input model.glb --output model_low.glb \

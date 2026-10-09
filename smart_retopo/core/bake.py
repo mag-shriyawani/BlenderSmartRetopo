@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Magnopus LLC
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Pipeline step 4: Cycles selected-to-active bake of high -> low."""
 
 from __future__ import annotations

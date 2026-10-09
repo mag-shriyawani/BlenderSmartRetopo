@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Magnopus LLC
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Smart Retopo core pipeline.
 
 Pure functions with no UI/registration dependencies so the pipeline can be
