@@ -68,7 +68,7 @@ def smart_retopo(objects: Iterable[bpy.types.Object],
         # 4. Bake
         t = time.perf_counter()
         step("Baking textures (Cycles)", 0.5)
-        sub = (lambda l, f: step(l, 0.5 + 0.5 * f)) if progress else None
+        sub = (lambda label, f: step(label, 0.5 + 0.5 * f)) if progress else None
         # Originals coincide with the combined high-poly and would occlude AO.
         vis = [(o, o.hide_get(), o.hide_render) for o in sources]
         for o in sources:

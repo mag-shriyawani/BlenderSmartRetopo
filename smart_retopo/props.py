@@ -1,6 +1,5 @@
 """Shared property definitions (used by the scene settings group and the operator)."""
 
-import bpy
 from bpy.props import BoolProperty, EnumProperty, FloatProperty, IntProperty, StringProperty
 
 from . import core

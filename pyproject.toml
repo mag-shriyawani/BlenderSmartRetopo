@@ -1,0 +1,12 @@
+# Tooling config only; the extension itself is packaged from smart_retopo/blender_manifest.toml.
+[tool.ruff]
+line-length = 120
+target-version = "py311"  # Blender 5.0 bundles Python 3.11
+extend-exclude = ["dist", "tests/_output"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# Blender's reload idiom imports bpy after the `if "bpy" in locals()` check.
+"**/__init__.py" = ["E402"]

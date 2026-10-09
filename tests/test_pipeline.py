@@ -65,7 +65,7 @@ def main():
         assert [u.name for u in low.data.uv_layers] == ["UVMap"]
         assert len(low.data.materials) == 1
         assert set(res["images"]) == {"BASE_COLOR", "NORMAL", "ROUGHNESS", "METALLIC", "AO"}
-        for k, p in res["images"].items():
+        for p in res["images"].values():
             assert os.path.isfile(p), p
         assert not any(o.name.endswith("_high") for o in bpy.data.objects), "high-poly not cleaned up"
 

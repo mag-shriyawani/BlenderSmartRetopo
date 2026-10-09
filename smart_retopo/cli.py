@@ -125,7 +125,7 @@ def main():
         else:
             objs = [o for o in scene_objs if o.type in core.CONVERTIBLE_TYPES and o.visible_get()]
         res = core.smart_retopo(objs, settings,
-                                progress=lambda l, f: print(f"[SmartRetopo] {l} ({f * 100:.0f}%)", flush=True))
+                                progress=lambda label, f: print(f"[SmartRetopo] {label} ({f * 100:.0f}%)", flush=True))
         export_file(out, bpy.data.objects[res.object_name])
         report = {"ok": True, "output": out, **res.to_dict()}
     except Exception as exc:

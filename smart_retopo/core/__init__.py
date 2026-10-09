@@ -18,7 +18,7 @@ if "bpy" in locals():
     for _m in (settings, utils, combine, retopo, uv, bake, pipeline):
         importlib.reload(_m)
 
-import bpy  # noqa: E402
+import bpy  # noqa: E402,F401  (kept for the reload check above)
 
 from .settings import (  # noqa: E402,F401
     ALL_MAPS, CONVERTIBLE_TYPES, ProgressFn, RetopoResult, RetopoSettings, SmartRetopoError,
