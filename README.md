@@ -1,11 +1,34 @@
-# SmartRetopo
+# (Not So) Smart Retopo
 
-Blender extension (4.2+) that turns arbitrary meshes into low-poly, textured game-ready meshes:
-**combine → QuadriFlow retopo → new UVs → Cycles bake**. Built to be driven by automation, and ultimately by Nodey & MCP.
+## A retopology plugin for Smart People
 
-Usage, options, Python API and CLI: see [`smart_retopo/README.md`](smart_retopo/README.md).
+The repo implements a Blender extension that turns arbitrary meshes into low-poly, textured game-ready meshes.
 
-## Repo layout
+Selected meshes are combined together, then automatically retopologized.
+A new UV layout is generated, then new PBR textures are baked from the old geometry onto the new model using Cycles.
+
+```mermaid
+flowchart LR
+    A[Selected meshes] --> B([Combine])
+    subgraph SmartRetopo
+        B --> C([Retopologize])
+        C --> D([New UV layout])
+        D --> E([Bake textures])
+    end
+    E --> F[Game-ready mesh]
+```
+
+The extension has an interactive UI but is also built to be executed through automation.
+
+The plugin is not terribly smart yet but it does have sensible defaults! Please bring your own intelligence when using this plugin.
+
+## Usage
+
+See [`smart_retopo/README.md`](smart_retopo/README.md).
+
+## Development
+
+### Repo layout
 
 | Path | |
 |---|---|
@@ -13,7 +36,7 @@ Usage, options, Python API and CLI: see [`smart_retopo/README.md`](smart_retopo/
 | `tests/test_pipeline.py` | End-to-end test: builds a scene, runs the operator, asserts on mesh/UVs/baked maps |
 | `scripts/build.sh` | Builds the installable zip into `dist/` |
 
-## Development
+### Environment
 
 ```sh
 # Run the test (Blender on PATH, or set BLENDER)
