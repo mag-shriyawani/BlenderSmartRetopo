@@ -9,8 +9,8 @@ import os
 
 import bpy
 
-from .settings import ALL_MAPS, ProgressFn, RetopoSettings
-from .utils import _bbox_diagonal, _ensure_object_mode, _make_active
+from .settings import ALL_MAPS, ProgressFn, RetopoSettings, Step
+from .utils import _bbox_diagonal, _ensure_object_mode, _make_active, run_steps
 
 
 # How each map is produced. "socket" maps are baked with an emission swap on
@@ -156,6 +156,18 @@ def _build_target_material(low, name):
 
 def bake_textures(high, low, s: RetopoSettings, base_name: str,
                   progress: ProgressFn = None) -> tuple[bpy.types.Material, dict]:
+    """Bake every map synchronously. Returns (material, {map: path | "<packed>"})."""
+    return run_steps(iter_bake_textures(high, low, s, base_name), progress)
+
+
+def iter_bake_textures(high, low, s: RetopoSettings, base_name: str,
+                       fraction=lambda f: f):
+    """Step generator for the bake (see ``Step``). Yields one bake request per map.
+
+    ``fraction`` maps this step's own progress (0..1) onto the caller's scale.
+    Returns (material, images). On failure or cancel the new material and
+    images are removed, and source materials and Cycles settings restored.
+    """
     maps = [m for m in ALL_MAPS if m in set(s.bake_maps)]
     mat, bsdf = _build_target_material(low, f"{base_name}_baked")
     if not maps:
@@ -183,16 +195,15 @@ def bake_textures(high, low, s: RetopoSettings, base_name: str,
 
     images = {}
     nodes = {}
+    created = []
     try:
         for i, key in enumerate(maps):
             spec = BAKE_DEFS[key]
-            if progress:
-                progress(f"Baking {key}", i / len(maps))
-
             img = bpy.data.images.new(
                 f"{base_name}_{key.lower()}", s.texture_size, s.texture_size,
                 alpha=False, float_buffer=(s.image_format == "OPEN_EXR"),
             )
+            created.append(img)
             img.colorspace_settings.name = spec["colorspace"]
             node = nt.nodes.new("ShaderNodeTexImage")
             node.image = img
@@ -214,7 +225,8 @@ def bake_textures(high, low, s: RetopoSettings, base_name: str,
 
             _make_active(low, others=[high])
             try:
-                bpy.ops.object.bake(
+                # The caller runs the bake (blocking, or as a job) and resumes us.
+                yield Step(f"Baking {key} ({i + 1}/{len(maps)})", fraction(i / len(maps)), bake=dict(
                     type=bake_type,
                     use_selected_to_active=True,
                     cage_extrusion=extrusion,
@@ -224,7 +236,7 @@ def bake_textures(high, low, s: RetopoSettings, base_name: str,
                     target="IMAGE_TEXTURES",
                     save_mode="INTERNAL",
                     normal_space="TANGENT",
-                )
+                ))
             finally:
                 for r in restores:
                     r()
@@ -238,12 +250,16 @@ def bake_textures(high, low, s: RetopoSettings, base_name: str,
             else:
                 img.pack()
                 images[key] = "<packed>"
+    except BaseException:  # includes GeneratorExit (cancel)
+        low.data.materials.clear()
+        bpy.data.materials.remove(mat)
+        for img in created:
+            bpy.data.images.remove(img)
+        raise
     finally:
         _restore_cycles(scene, saved)
 
     _wire_material(nt, bsdf, nodes)
-    if progress:
-        progress("Baking done", 1.0)
     return mat, images
 
 

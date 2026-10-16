@@ -10,13 +10,13 @@ from typing import Iterable
 
 import bpy
 
-from .bake import bake_textures
+from .bake import iter_bake_textures
 from .combine import combine_meshes
 from .retopo import retopologize
 from .settings import (
-    CONVERTIBLE_TYPES, UV_MODES, ProgressFn, RetopoResult, RetopoSettings, SmartRetopoError,
+    CONVERTIBLE_TYPES, UV_MODES, ProgressFn, RetopoResult, RetopoSettings, SmartRetopoError, Step,
 )
-from .utils import _link_to_scene, _make_active, _remove_object
+from .utils import _link_to_scene, _make_active, _remove_object, run_steps
 from .uv import generate_uvs, use_existing_uvs
 
 
@@ -40,7 +40,19 @@ def _resolve_low_poly(s: RetopoSettings):
 def smart_retopo(objects: Iterable[bpy.types.Object],
                  settings: RetopoSettings | dict | None = None,
                  progress: ProgressFn = None) -> RetopoResult:
-    """Run combine -> QuadriFlow -> UV -> bake. Returns a RetopoResult."""
+    """Run combine -> QuadriFlow -> UV -> bake, blocking. Returns a RetopoResult."""
+    return run_steps(iter_smart_retopo(objects, settings), progress)
+
+
+def iter_smart_retopo(objects: Iterable[bpy.types.Object],
+                      settings: RetopoSettings | dict | None = None):
+    """The pipeline as a step generator (see ``Step``); returns a RetopoResult.
+
+    Each yielded step names the work done on the next resume, so a UI can
+    redraw in between. Bake steps are run by the caller. Closing the generator
+    (cancel) or throwing into it (failed bake) removes everything it created
+    and restores the scene.
+    """
     if settings is None:
         s = RetopoSettings()
     elif isinstance(settings, dict):
@@ -59,14 +71,10 @@ def smart_retopo(objects: Iterable[bpy.types.Object],
                        low_poly_object=low_poly.name if low_poly else "",
                        uvs_generated=s.uv_mode.upper() == "GENERATE")
     base = s.name or (sources[0].name if len(sources) == 1 else f"{sources[0].name}_combined")
-    t0 = time.perf_counter()
-
-    def step(label, frac):
-        if progress:
-            progress(label, frac)
 
     # 1. Combine
-    step("Combining meshes", 0.0)
+    yield Step("Combining meshes", 0.0)
+    t0 = time.perf_counter()
     high = combine_meshes(sources, f"{base}_high")
     res.source_faces = len(high.data.polygons)
     res.timings["combine"] = time.perf_counter() - t0
@@ -76,12 +84,13 @@ def smart_retopo(objects: Iterable[bpy.types.Object],
         # 2. Retopo (on a copy so the high-poly survives for baking), or take
         #    an evaluated, world-space copy of the provided low-poly. The
         #    user's low-poly object itself is never modified.
-        t = time.perf_counter()
         if low_poly is not None:
-            step("Copying provided low-poly", 0.1)
+            yield Step("Copying provided low-poly", 0.1)
+            t = time.perf_counter()
             low = combine_meshes([low_poly], f"{base}_retopo")
         else:
-            step("Retopologizing (QuadriFlow)", 0.1)
+            yield Step("Retopologizing (QuadriFlow)", 0.1)
+            t = time.perf_counter()
             low = high.copy()
             low.data = high.data.copy()
             low.name = low.data.name = f"{base}_retopo"
@@ -91,19 +100,16 @@ def smart_retopo(objects: Iterable[bpy.types.Object],
         res.timings["retopo"] = time.perf_counter() - t
 
         # 3. UVs
+        yield Step("Generating UVs" if res.uvs_generated else "Using existing UVs", 0.4)
         t = time.perf_counter()
         if res.uvs_generated:
-            step("Generating UVs", 0.4)
             generate_uvs(low, s)
         else:
-            step("Using existing UVs", 0.4)
             res.warnings += use_existing_uvs(low)
         res.timings["uv"] = time.perf_counter() - t
 
         # 4. Bake
         t = time.perf_counter()
-        step("Baking textures (Cycles)", 0.5)
-        sub = (lambda label, f: step(label, 0.5 + 0.5 * f)) if progress else None
         # Originals coincide with the combined high-poly / the low-poly copy
         # and would occlude AO.
         originals = sources + ([low_poly] if low_poly else [])
@@ -112,7 +118,8 @@ def smart_retopo(objects: Iterable[bpy.types.Object],
             o.hide_set(True)
             o.hide_render = True
         try:
-            mat, images = bake_textures(high, low, s, base, progress=sub)
+            mat, images = yield from iter_bake_textures(
+                high, low, s, base, fraction=lambda f: 0.5 + 0.5 * f)
         finally:
             for o, h, hr in vis:
                 o.hide_set(h)
@@ -120,7 +127,7 @@ def smart_retopo(objects: Iterable[bpy.types.Object],
         res.material_name = mat.name
         res.images = images
         res.timings["bake"] = time.perf_counter() - t
-    except Exception:
+    except BaseException:  # includes GeneratorExit (cancel)
         if low is not None:
             _remove_object(low)
         _remove_object(high)
@@ -140,5 +147,5 @@ def smart_retopo(objects: Iterable[bpy.types.Object],
     _make_active(low)
     res.object_name = low.name
     res.timings["total"] = time.perf_counter() - t0
-    step("Done", 1.0)
+    yield Step("Done", 1.0)
     return res

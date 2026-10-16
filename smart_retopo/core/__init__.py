@@ -12,7 +12,8 @@ Pipeline (one module per step):
     2. retopo.py   - (optional voxel clean-up) + QuadriFlow remesh
     3. uv.py       - Smart UV Project / Lightmap Pack + island packing
     4. bake.py     - Cycles selected-to-active bake of high -> low
-    pipeline.py    - smart_retopo(): runs all of the above
+    pipeline.py    - smart_retopo(): runs all of the above; iter_smart_retopo()
+                     yields the same work as resumable steps (UI progress / cancel)
 """
 
 if "bpy" in locals():
@@ -24,10 +25,11 @@ if "bpy" in locals():
 import bpy  # noqa: E402,F401  (kept for the reload check above)
 
 from .settings import (  # noqa: E402,F401
-    ALL_MAPS, CONVERTIBLE_TYPES, ProgressFn, RetopoResult, RetopoSettings, SmartRetopoError,
+    ALL_MAPS, CONVERTIBLE_TYPES, ProgressFn, RetopoResult, RetopoSettings, SmartRetopoError, Step,
 )
 from .combine import combine_meshes  # noqa: E402,F401
+from .utils import run_steps  # noqa: E402,F401
 from .retopo import retopologize, voxel_remesh  # noqa: E402,F401
 from .uv import generate_uvs  # noqa: E402,F401
-from .bake import BAKE_DEFS, IMAGE_EXT, bake_textures  # noqa: E402,F401
-from .pipeline import smart_retopo  # noqa: E402,F401
+from .bake import BAKE_DEFS, IMAGE_EXT, bake_textures, iter_bake_textures  # noqa: E402,F401
+from .pipeline import iter_smart_retopo, smart_retopo  # noqa: E402,F401

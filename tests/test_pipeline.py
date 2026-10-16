@@ -169,9 +169,84 @@ def test_invalid_settings():
         assert len(bpy.data.objects) == n_objects, "failed run left objects behind"
 
 
+# A provided low-poly skips QuadriFlow (~8 s), which these tests don't need.
+STEP_SETTINGS = dict(low_poly_object="LowPoly", texture_size=64, bake_samples=1,
+                     bake_maps=["BASE_COLOR", "NORMAL", "METALLIC"])
+
+
+def _drive(gen, stop_at_bake=None, inject=None):
+    """Drive a step generator like the modal operator does.
+
+    Runs each requested bake synchronously. At the ``stop_at_bake``-th bake
+    request (0-based), closes the generator (``inject=None``, a cancel) or
+    throws ``inject`` into it (a failed bake job). Returns (steps, result).
+    """
+    steps, bakes = [], 0
+    step = next(gen)
+    try:
+        while True:
+            steps.append(step)
+            if step.bake is not None:
+                if bakes == stop_at_bake:
+                    if inject is None:
+                        gen.close()
+                        return steps, None
+                    gen.throw(inject)
+                bpy.ops.object.bake(**step.bake)
+                bakes += 1
+            step = next(gen)
+    except StopIteration as stop:
+        return steps, stop.value
+
+
+def test_steps():
+    """The step generator reports ordered progress and hands each bake to the caller."""
+    objs = build_low_poly_scene()
+    steps, res = _drive(smart_retopo.core.iter_smart_retopo(objs, STEP_SETTINGS))
+    fracs = [s.fraction for s in steps]
+    assert fracs == sorted(fracs) and fracs[0] == 0.0, fracs
+    assert (steps[-1].label, steps[-1].fraction) == ("Done", 1.0), steps[-1]
+    baked = [s.label for s in steps if s.bake is not None]
+    assert baked == ["Baking BASE_COLOR (1/3)", "Baking NORMAL (2/3)", "Baking METALLIC (3/3)"], baked
+    assert isinstance(res, smart_retopo.core.RetopoResult)
+    assert set(res.images) == set(STEP_SETTINGS["bake_maps"])
+    assert res.object_name in bpy.data.objects
+
+
+def _assert_clean_after_abort(objs, before):
+    names = {o.name for o in bpy.data.objects}
+    assert names == before["objects"], names ^ before["objects"]
+    assert {m.name for m in bpy.data.materials} == before["materials"], "baked material left"
+    assert {i.name for i in bpy.data.images} == before["images"], "baked images left"
+    for m in bpy.data.materials:
+        assert not any(n.type == "EMISSION" for n in m.node_tree.nodes), f"emission swap left in {m.name}"
+    assert not any(o.hide_get() or o.hide_render for o in objs), "sources left hidden"
+    assert bpy.context.scene.render.engine == before["engine"], "render engine not restored"
+
+
+def test_abort():
+    """Cancelling (close) or a failed bake (throw) mid-run leaves the scene as it was."""
+    for stop_at_bake, inject in ((0, None), (1, None), (1, RuntimeError("bake job failed"))):
+        objs = build_low_poly_scene()
+        before = dict(objects={o.name for o in bpy.data.objects},
+                      materials={m.name for m in bpy.data.materials},
+                      images={i.name for i in bpy.data.images},
+                      engine=bpy.context.scene.render.engine)
+        gen = smart_retopo.core.iter_smart_retopo(objs, STEP_SETTINGS)
+        try:
+            _, res = _drive(gen, stop_at_bake=stop_at_bake, inject=inject)
+        except RuntimeError as exc:
+            assert inject is not None and exc is inject, exc
+        else:
+            assert inject is None and res is None
+        _assert_clean_after_abort(objs, before)
+
+
 def main():
     smart_retopo.register()
     try:
+        test_steps()
+        test_abort()
         test_quadriflow()
         test_provided_low_poly("EXISTING")
         test_provided_low_poly("GENERATE")

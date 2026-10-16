@@ -83,3 +83,19 @@ class SmartRetopoError(RuntimeError):
 
 
 ProgressFn = Optional[Callable[[str, float], None]]
+
+
+@dataclass
+class Step:
+    """One unit of pipeline work, yielded by the ``iter_*`` generators.
+
+    ``label`` names the work that runs when the generator is next resumed, and
+    ``fraction`` (0..1) is how much of the pipeline is done before it. A step
+    with ``bake`` set asks the caller to run ``bpy.ops.object.bake(**bake)``
+    before resuming (synchronously, or as Blender's non-blocking bake job). If
+    the bake fails, throw the exception into the generator; to cancel, close
+    it. Either way the generator restores the scene and removes what it made.
+    """
+    label: str
+    fraction: float
+    bake: Optional[dict] = None

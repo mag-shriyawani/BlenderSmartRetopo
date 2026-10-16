@@ -73,3 +73,28 @@ def _remove_object(obj):
     bpy.data.objects.remove(obj, do_unlink=True)
     if mesh is not None and mesh.users == 0:
         bpy.data.meshes.remove(mesh)
+
+
+def run_steps(gen, progress=None):
+    """Drive a step generator (see ``Step``) to completion, blocking.
+
+    Reports each step to ``progress(label, fraction)`` and runs requested bakes
+    with ``bpy.ops.object.bake``. A failed bake is thrown into the generator so
+    it can clean up. Returns the generator's return value.
+    """
+    try:
+        step = next(gen)
+        while True:
+            if progress:
+                progress(step.label, step.fraction)
+            if step.bake is None:
+                step = next(gen)
+                continue
+            try:
+                bpy.ops.object.bake(**step.bake)
+            except Exception as exc:
+                step = gen.throw(exc)  # re-raised by the generator after cleanup
+            else:
+                step = next(gen)
+    except StopIteration as stop:
+        return stop.value
