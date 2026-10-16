@@ -222,13 +222,19 @@ def _assert_clean_after_abort(objs, before):
         assert not any(n.type == "EMISSION" for n in m.node_tree.nodes), f"emission swap left in {m.name}"
     assert not any(o.hide_get() or o.hide_render for o in objs), "sources left hidden"
     assert bpy.context.scene.render.engine == before["engine"], "render engine not restored"
+    vl = bpy.context.view_layer
+    assert {o.name for o in vl.objects if o.select_get()} == before["selected"], "selection not restored"
+    assert vl.objects.active is not None and vl.objects.active.name == before["active"], "active not restored"
 
 
 def test_abort():
     """Cancelling (close) or a failed bake (throw) mid-run leaves the scene as it was."""
     for stop_at_bake, inject in ((0, None), (1, None), (1, RuntimeError("bake job failed"))):
         objs = build_low_poly_scene()
-        before = dict(objects={o.name for o in bpy.data.objects},
+        for o in objs:
+            o.select_set(True)
+        before = dict(selected={o.name for o in objs}, active=bpy.context.view_layer.objects.active.name,
+                      objects={o.name for o in bpy.data.objects},
                       materials={m.name for m in bpy.data.materials},
                       images={i.name for i in bpy.data.images},
                       engine=bpy.context.scene.render.engine)

@@ -37,6 +37,13 @@ def _resolve_low_poly(s: RetopoSettings):
     return lp
 
 
+def _restore_selection(selected, active):
+    vl = bpy.context.view_layer
+    for o in vl.objects:
+        o.select_set(o in selected)
+    vl.objects.active = active
+
+
 def smart_retopo(objects: Iterable[bpy.types.Object],
                  settings: RetopoSettings | dict | None = None,
                  progress: ProgressFn = None) -> RetopoResult:
@@ -71,6 +78,9 @@ def iter_smart_retopo(objects: Iterable[bpy.types.Object],
                        low_poly_object=low_poly.name if low_poly else "",
                        uvs_generated=s.uv_mode.upper() == "GENERATE")
     base = s.name or (sources[0].name if len(sources) == 1 else f"{sources[0].name}_combined")
+
+    vl = bpy.context.view_layer
+    selection = ([o for o in vl.objects if o.select_get()], vl.objects.active)
 
     # 1. Combine
     yield Step("Combining meshes", 0.0)
@@ -131,6 +141,7 @@ def iter_smart_retopo(objects: Iterable[bpy.types.Object],
         if low is not None:
             _remove_object(low)
         _remove_object(high)
+        _restore_selection(*selection)
         raise
 
     # Housekeeping
