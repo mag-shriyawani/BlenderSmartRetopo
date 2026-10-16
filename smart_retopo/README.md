@@ -33,7 +33,7 @@ result = json.loads(bpy.context.window_manager["smart_retopo_last_result"])
 bpy.ops.object.smart_retopo(low_poly_object="Chair_LOD2", uv_mode="EXISTING")
 ```
 
-Calling the operator from Python skips the panel settings and uses the arguments you pass (or the defaults). When you click the button, it uses the panel settings.
+Calling the operator from Python skips the panel settings and uses the arguments you pass (or the defaults). It blocks until it's done, so you can read the result straight after the call. When you click the button, it uses the panel settings and runs in the background: the panel and status bar show progress, and **Esc** cancels and removes what was made so far.
 
 ## Headless / CLI
 
@@ -55,7 +55,7 @@ This runs without installing the add-on. Supported inputs are blend, glb/gltf, f
 
 ## Notes
 
-- The operator blocks the UI while it runs. QuadriFlow at high face counts and big bakes can take minutes.
+- From the UI, Blender stays responsive during the bakes, which run as Blender's bake job with its progress bar in the status bar. QuadriFlow is a single blocking step, so at high face counts Blender can stop responding until it finishes.
 - QuadriFlow face counts are approximate.
 - Only Principled BSDF inputs are read for socket maps. Other shaders fall back to defaults.
 - AO is baked but not wired into the material, because Principled has no AO input.

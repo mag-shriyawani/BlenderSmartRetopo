@@ -15,13 +15,15 @@ flowchart LR
 
 `core/pipeline.py:smart_retopo(objects, settings, progress)` runs the steps and returns a `RetopoResult`. Its shape is in [`result.schema.json`](result.schema.json).
 
+The same work is also available as a step generator, `iter_smart_retopo(objects, settings)`. It yields a `Step(label, fraction, bake)` before each unit of work and returns the `RetopoResult`. A step with `bake` set is a request: the caller runs `bpy.ops.object.bake(**step.bake)` and then resumes the generator. `smart_retopo()` is just `run_steps(iter_smart_retopo(...))`, which runs those bakes synchronously. The UI operator drives the same generator one step per timer tick (see below).
+
 ## Entry points
 
-All three entry points call the same `core.smart_retopo`.
+All three entry points run the same pipeline: `execute` and the CLI through `core.smart_retopo`, and the UI through `core.iter_smart_retopo`.
 
 | Entry point | File | Settings come from | Result goes to |
 |---|---|---|---|
-| UI button / Object menu | `operators.py` (`invoke`) | Panel values on `scene.smart_retopo`, unless a property is explicitly set | Info report |
+| UI button / Object menu | `operators.py` (`invoke` → `modal`) | Panel values on `scene.smart_retopo`, unless a property is explicitly set | Info report, and `window_manager["smart_retopo_last_result"]` |
 | Python / MCP: `bpy.ops.object.smart_retopo(...)` | `operators.py` (`execute`) | Only the arguments passed, otherwise the defaults. **Panel values are ignored.** | `window_manager["smart_retopo_last_result"]` (JSON string) |
 | Headless CLI: `blender -b -P smart_retopo/cli.py -- ...` | `cli.py` | Flags, then `--settings-json` merged on top | `SMART_RETOPO_RESULT: {json}` on stdout, optional `--report` file, exit code 1 on failure |
 
@@ -61,7 +63,9 @@ Images are saved to `output_dir`, or packed when it's empty. Then they're wired 
 - **Cleanup on failure.** If any step raises, `_high` and `_retopo` are removed, so a failed run doesn't litter the scene. On success, `_high` is removed unless `keep_high_poly` is set, and the sources are hidden if `hide_sources` is set.
 - **Render settings** are saved and restored around the bake: engine, samples and device.
 - **Context.** Operators run under `bpy.context.temp_override(...)` or after `_make_active()`, and in object mode. Keep that pattern, because the code has to work headless (`blender -b`) where there's no window.
-- **QuadriFlow from Python is blocking.** It runs synchronously when called from a script. The UI operator therefore blocks too, and there's no modal or job version yet.
+- **The UI run is modal; automation is synchronous.** `invoke` starts a 0.05 s timer and resumes the step generator once per tick, so Blender redraws between steps. The panel shows a progress bar (`operators.running()`), and the status bar shows the step and "Esc to cancel". Each bake request runs as Blender's own `OBJECT_BAKE` job (`'INVOKE_DEFAULT'`), so the UI stays responsive and the status bar shows Blender's bake progress. The operator learns that a bake finished through the `object_bake_complete` / `object_bake_cancel` handlers, falling back to `bpy.app.is_job_running('OBJECT_BAKE')`. While it runs, key and button input is swallowed so the scene can't change underneath; view navigation passes through. `execute`, which Python, MCP and Nodey call, stays blocking so the result is ready when the call returns. Don't make it modal.
+- **Cancel and failure clean-up live in the generators.** Esc between steps closes the generator. During a bake, Blender's bake job takes Esc itself and the cancel handler fires. A failed bake is thrown into the generator. Either way, the `finally`/`except BaseException` blocks restore the emission swaps, visibility, Cycles settings and selection, and remove `_high`, `_retopo`, the baked material and its images. Catch `BaseException` there, not `Exception`: closing a generator raises `GeneratorExit`.
+- **QuadriFlow is still one blocking step.** Python can't watch a QuadriFlow job (`is_job_running` doesn't know about it), so the "Retopologizing (QuadriFlow)" label is shown first and then the UI waits for it to finish. At high face counts, macOS can show the beachball during that step.
 
 ## Packaging
 
