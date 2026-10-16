@@ -18,6 +18,13 @@ class VIEW3D_PT_smart_retopo(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
+        # At the top, so it's visible without scrolling the panel.
+        run = operators.running()
+        if run is not None:
+            label, fraction = run
+            layout.progress(factor=fraction, type="BAR", text=f"{label} ({fraction:.0%})")
+            layout.label(text="Esc to cancel", icon="CANCEL")
+
         has_low = bool(s.low_poly_object)
         n = len([o for o in context.selected_objects
                  if o.type == "MESH" and o.name != s.low_poly_object])
@@ -75,11 +82,6 @@ class VIEW3D_PT_smart_retopo(bpy.types.Panel):
         col.prop(s, "hide_sources")
 
         layout.separator()
-        run = operators.running()
-        if run is not None:
-            label, fraction = run
-            layout.progress(factor=fraction, type="BAR", text=label)
-            layout.label(text="Esc to cancel", icon="CANCEL")
         row = layout.row()
         row.scale_y = 1.5
         row.operator("object.smart_retopo", icon="MOD_REMESH")
