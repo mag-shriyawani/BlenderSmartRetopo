@@ -3,6 +3,8 @@
 
 import bpy
 
+from . import operators
+
 
 class VIEW3D_PT_smart_retopo(bpy.types.Panel):
     bl_label = "Smart Retopo"
@@ -73,6 +75,11 @@ class VIEW3D_PT_smart_retopo(bpy.types.Panel):
         col.prop(s, "hide_sources")
 
         layout.separator()
+        run = operators.running()
+        if run is not None:
+            label, fraction = run
+            layout.progress(factor=fraction, type="BAR", text=label)
+            layout.label(text="Esc to cancel", icon="CANCEL")
         row = layout.row()
         row.scale_y = 1.5
         row.operator("object.smart_retopo", icon="MOD_REMESH")
