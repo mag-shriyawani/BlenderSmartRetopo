@@ -7,7 +7,9 @@ Run with Blender:   blender -b --factory-startup -P tests/test_pipeline.py
 or the bpy module:  python tests/test_pipeline.py      (pip install bpy)
 
 Builds a scene (subdivided checker sphere + intersecting red cube), runs the
-operator, and asserts on the result. Outputs go to tests/_output/.
+operator, and asserts on the result. Then repeats with a provided low-poly
+(existing and generated UVs) and checks the settings validation. Outputs go to
+tests/_output/.
 """
 
 import json
@@ -48,34 +50,132 @@ def build_scene():
     return [sph, cube]
 
 
+MAPS = {"BASE_COLOR", "NORMAL", "ROUGHNESS", "METALLIC", "AO"}
+
+
+def _result():
+    return json.loads(bpy.context.window_manager["smart_retopo_last_result"])
+
+
+def _check_bake(res, low):
+    assert len(low.data.materials) == 1
+    assert set(res["images"]) == MAPS
+    for p in res["images"].values():
+        assert os.path.isfile(p), p
+    assert not any(o.name.endswith("_high") for o in bpy.data.objects), "high-poly not cleaned up"
+
+
+def test_quadriflow():
+    objs = build_scene()
+    for o in objs:
+        o.select_set(True)
+    r = bpy.ops.object.smart_retopo(
+        target_faces=2000, texture_size=256, bake_samples=4,
+        bake_maps=MAPS, output_dir=os.path.join(OUT, "textures"),
+    )
+    assert r == {"FINISHED"}, r
+    res = _result()
+    print(json.dumps(res, indent=1))
+    # Saved so tests/ci/check_result_schema.py can validate a real result.
+    with open(os.path.join(OUT, "result.json"), "w") as f:
+        json.dump(res, f, indent=1)
+
+    low = bpy.data.objects[res["object_name"]]
+    assert 1000 < res["result_faces"] < 4000, res["result_faces"]
+    assert res["low_poly_object"] == "" and res["uvs_generated"] is True
+    assert [u.name for u in low.data.uv_layers] == ["UVMap"]
+    _check_bake(res, low)
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, "result.blend"))
+
+
+def build_low_poly_scene():
+    """The checker sphere as the only source, plus a hand-made UV'd low-poly sphere."""
+    sph, cube = build_scene()
+    bpy.data.objects.remove(cube, do_unlink=True)
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=1, segments=16, ring_count=8, calc_uvs=True)
+    lp = bpy.context.object
+    lp.name = "LowPoly"
+    render_uv = lp.data.uv_layers[0]
+    render_uv.name = "Bake"
+    # A second, active-for-editing map: the bake must still use the render map.
+    extra = lp.data.uv_layers.new(name="Extra")
+    lp.data.uv_layers.active = extra
+    render_uv.active_render = True
+    return sph, lp
+
+
+def _uvs(mesh, name):
+    co = [0.0] * (2 * len(mesh.loops))
+    mesh.uv_layers[name].uv.foreach_get("vector", co)
+    return co
+
+
+def test_provided_low_poly(uv_mode):
+    sph, lp = build_low_poly_scene()
+    orig_uvs = _uvs(lp.data, "Bake")
+    orig_mesh = lp.data.name
+    for o in (sph, lp):  # selecting the low-poly too must not make it a source
+        o.select_set(True)
+    r = bpy.ops.object.smart_retopo(
+        low_poly_object="LowPoly", uv_mode=uv_mode, texture_size=256, bake_samples=4,
+        bake_maps=MAPS, output_dir=os.path.join(OUT, f"textures_{uv_mode.lower()}"),
+    )
+    assert r == {"FINISHED"}, r
+    res = _result()
+    print(json.dumps(res, indent=1))
+
+    low = bpy.data.objects[res["object_name"]]
+    assert low is not lp
+    assert res["source_objects"] == [sph.name], res["source_objects"]
+    assert res["low_poly_object"] == "LowPoly"
+    assert res["used_voxel_remesh"] is False
+    assert res["result_faces"] == 16 * 8 == len(low.data.polygons), res["result_faces"]
+    if uv_mode == "EXISTING":
+        assert res["uvs_generated"] is False
+        assert low.data.uv_layers.active.name == "Bake"
+        assert _uvs(low.data, "Bake") == orig_uvs, "existing UVs changed"
+        assert res["warnings"] == [], res["warnings"]
+        with open(os.path.join(OUT, "result_low_poly.json"), "w") as f:
+            json.dump(res, f, indent=1)
+    else:
+        assert res["uvs_generated"] is True
+        assert [u.name for u in low.data.uv_layers] == ["UVMap"]
+    _check_bake(res, low)
+
+    # The user's low-poly is untouched (just hidden, like the sources).
+    assert lp.data.name == orig_mesh
+    assert [u.name for u in lp.data.uv_layers] == ["Bake", "Extra"]
+    assert _uvs(lp.data, "Bake") == orig_uvs
+    assert lp.hide_get()
+
+
+def test_invalid_settings():
+    sph, lp = build_low_poly_scene()
+    lp.data.uv_layers.remove(lp.data.uv_layers["Bake"])
+    lp.data.uv_layers.remove(lp.data.uv_layers["Extra"])
+    n_objects = len(bpy.data.objects)
+    cases = [
+        (dict(uv_mode="EXISTING"), "needs a low-poly"),
+        (dict(low_poly_object="Missing"), "not found"),
+        (dict(low_poly_object="LowPoly", uv_mode="EXISTING"), "has no UV map"),
+    ]
+    for settings, msg in cases:
+        try:
+            smart_retopo.core.smart_retopo([sph, lp], dict(settings, texture_size=64))
+        except smart_retopo.core.SmartRetopoError as exc:
+            assert msg in str(exc), (settings, exc)
+        else:
+            raise AssertionError(f"no error for {settings}")
+        assert len(bpy.data.objects) == n_objects, "failed run left objects behind"
+
+
 def main():
     smart_retopo.register()
     try:
-        objs = build_scene()
-        for o in objs:
-            o.select_set(True)
-        r = bpy.ops.object.smart_retopo(
-            target_faces=2000, texture_size=256, bake_samples=4,
-            bake_maps={"BASE_COLOR", "NORMAL", "ROUGHNESS", "METALLIC", "AO"},
-            output_dir=os.path.join(OUT, "textures"),
-        )
-        assert r == {"FINISHED"}, r
-        res = json.loads(bpy.context.window_manager["smart_retopo_last_result"])
-        print(json.dumps(res, indent=1))
-        # Saved so tests/ci/check_result_schema.py can validate a real result.
-        with open(os.path.join(OUT, "result.json"), "w") as f:
-            json.dump(res, f, indent=1)
-
-        low = bpy.data.objects[res["object_name"]]
-        assert 1000 < res["result_faces"] < 4000, res["result_faces"]
-        assert [u.name for u in low.data.uv_layers] == ["UVMap"]
-        assert len(low.data.materials) == 1
-        assert set(res["images"]) == {"BASE_COLOR", "NORMAL", "ROUGHNESS", "METALLIC", "AO"}
-        for p in res["images"].values():
-            assert os.path.isfile(p), p
-        assert not any(o.name.endswith("_high") for o in bpy.data.objects), "high-poly not cleaned up"
-
-        bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, "result.blend"))
+        test_quadriflow()
+        test_provided_low_poly("EXISTING")
+        test_provided_low_poly("GENERATE")
+        test_invalid_settings()
         print("SMART_RETOPO_TEST: PASS")
     finally:
         smart_retopo.unregister()

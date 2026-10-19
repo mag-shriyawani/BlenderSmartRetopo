@@ -21,6 +21,10 @@ class SmartRetopoProps:
     name: StringProperty(name="Name", default="",
                          description="Base name for generated data (empty = use source name)")
 
+    low_poly_object: StringProperty(
+        name="Low-Poly Mesh", default="",
+        description="Use this object as the low-poly instead of generating one with QuadriFlow "
+                    "(empty = generate). The object itself is not modified")
     target_faces: IntProperty(name="Target Faces", default=5000, min=10, soft_max=200000)
     voxel_mode: EnumProperty(
         name="Voxel Pre-pass",
@@ -39,6 +43,10 @@ class SmartRetopoProps:
     smooth_shading: BoolProperty(name="Smooth Shading", default=True)
     seed: IntProperty(name="Seed", default=0, min=0)
 
+    uv_mode: EnumProperty(name="UVs", items=[
+        ("GENERATE", "Generate", "Unwrap the low-poly with the UV method below (replaces its UV maps)"),
+        ("EXISTING", "Use Existing", "Bake into the provided low-poly's existing UV map (its render UV map)"),
+    ], default="GENERATE")
     uv_method: EnumProperty(name="UV Method", items=[
         ("SMART", "Smart UV Project", ""), ("LIGHTMAP", "Lightmap Pack", "")], default="SMART")
     uv_angle_limit: FloatProperty(name="Angle Limit", default=66.0, min=1.0, max=89.0, subtype="NONE")
@@ -50,9 +58,11 @@ class SmartRetopoProps:
     bake_samples: IntProperty(name="Samples", default=16, min=1, soft_max=512)
     bake_margin: IntProperty(name="Margin (px)", default=16, min=0, max=128)
     cage_extrusion: FloatProperty(name="Extrusion", default=0.0, min=0.0, unit="LENGTH",
-                                  description="0 = auto (1% of bounding-box diagonal)")
+                                  description="0 = auto (1% of bounding-box diagonal). Increase it if a "
+                                              "provided low-poly sits further from the surface")
     max_ray_distance: FloatProperty(name="Max Ray Distance", default=0.0, min=0.0, unit="LENGTH",
-                                    description="0 = auto (5% of bounding-box diagonal)")
+                                    description="0 = auto (5% of bounding-box diagonal). Increase it if a "
+                                                "provided low-poly sits further from the surface")
     device: EnumProperty(name="Device", items=[("CPU", "CPU", ""), ("GPU", "GPU", "")], default="CPU")
     output_dir: StringProperty(name="Output Folder", default="", subtype="DIR_PATH",
                                description="Where to save baked textures (empty = pack into .blend)")

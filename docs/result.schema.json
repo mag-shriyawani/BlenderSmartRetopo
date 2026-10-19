@@ -11,6 +11,8 @@
     "source_faces",
     "result_faces",
     "used_voxel_remesh",
+    "low_poly_object",
+    "uvs_generated",
     "images",
     "timings",
     "warnings"
@@ -18,7 +20,7 @@
   "properties": {
     "object_name": {
       "type": "string",
-      "description": "Name of the new low-poly object, '<base>_retopo'."
+      "description": "Name of the new low-poly object, '<base>_retopo'. With a provided low-poly this is a copy of it; the provided object is not modified."
     },
     "material_name": {
       "type": "string",
@@ -37,11 +39,19 @@
     "result_faces": {
       "type": "integer",
       "minimum": 0,
-      "description": "Face count after QuadriFlow (approximately target_faces)."
+      "description": "Face count of the low-poly: after QuadriFlow (approximately target_faces), or of the provided low-poly."
     },
     "used_voxel_remesh": {
       "type": "boolean",
-      "description": "True if a voxel remesh ran before QuadriFlow (pre-pass or fallback)."
+      "description": "True if a voxel remesh ran before QuadriFlow (pre-pass or fallback). Always false with a provided low-poly."
+    },
+    "low_poly_object": {
+      "type": "string",
+      "description": "Name of the provided low-poly object (settings.low_poly_object), or '' when QuadriFlow generated it."
+    },
+    "uvs_generated": {
+      "type": "boolean",
+      "description": "True if new UVs were unwrapped (uv_mode GENERATE); false if the provided low-poly's existing UV map was used (uv_mode EXISTING)."
     },
     "images": {
       "type": "object",

@@ -12,12 +12,15 @@ CONVERTIBLE_TYPES = {"MESH", "CURVE", "SURFACE", "META", "FONT"}
 
 ALL_MAPS = ("BASE_COLOR", "NORMAL", "ROUGHNESS", "METALLIC", "AO", "EMISSION")
 
+UV_MODES = ("GENERATE", "EXISTING")
+
 
 @dataclass
 class RetopoSettings:
     name: str = ""                      # base name for outputs ("" = derive from first source)
 
     # Retopology
+    low_poly_object: str = ""           # use this object as the low-poly ("" = QuadriFlow)
     target_faces: int = 5000
     voxel_mode: str = "AUTO"            # AUTO | ALWAYS | NEVER
     voxel_resolution: int = 256         # voxels across largest bbox dimension
@@ -28,6 +31,7 @@ class RetopoSettings:
     seed: int = 0
 
     # UVs
+    uv_mode: str = "GENERATE"           # GENERATE | EXISTING (EXISTING needs low_poly_object)
     uv_method: str = "SMART"            # SMART | LIGHTMAP
     uv_angle_limit: float = 66.0        # degrees (Smart UV)
     uv_island_margin: float = 0.005
@@ -64,6 +68,8 @@ class RetopoResult:
     source_faces: int = 0
     result_faces: int = 0
     used_voxel_remesh: bool = False
+    low_poly_object: str = ""                    # provided low-poly ("" = QuadriFlow)
+    uvs_generated: bool = True
     images: dict = field(default_factory=dict)   # map -> filepath or "<packed>"
     timings: dict = field(default_factory=dict)
     warnings: list = field(default_factory=list)

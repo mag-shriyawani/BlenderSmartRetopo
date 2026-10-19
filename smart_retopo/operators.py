@@ -32,6 +32,10 @@ class OBJECT_OT_smart_retopo(SmartRetopoProps, bpy.types.Operator):
         for name in PROP_NAMES:
             if not self.properties.is_property_set(name):
                 setattr(self, name, getattr(panel, name))
+        # The UV mode toggle is only shown with a low-poly; don't let a hidden
+        # leftover EXISTING fail the run.
+        if not self.low_poly_object and not self.properties.is_property_set("uv_mode"):
+            self.uv_mode = "GENERATE"
         return self.execute(context)
 
     def execute(self, context):

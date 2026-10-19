@@ -16,29 +16,41 @@ class VIEW3D_PT_smart_retopo(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        n = len([o for o in context.selected_objects if o.type == "MESH"])
-        layout.label(text=f"{n} mesh object(s) selected", icon="OBJECT_DATA")
+        has_low = bool(s.low_poly_object)
+        n = len([o for o in context.selected_objects
+                 if o.type == "MESH" and o.name != s.low_poly_object])
+        layout.label(text=f"{n} source mesh object(s) selected", icon="OBJECT_DATA")
         layout.prop(s, "name")
 
         box = layout.box()
         box.label(text="Retopology", icon="MOD_REMESH")
-        box.prop(s, "target_faces")
-        box.prop(s, "voxel_mode")
+        box.prop_search(s, "low_poly_object", bpy.data, "objects", icon="MESH_DATA")
+        if has_low:
+            lp = bpy.data.objects.get(s.low_poly_object)
+            if lp is None or lp.type != "MESH":
+                box.label(text="Not a mesh object in this file", icon="ERROR")
+        qf = box.column()
+        qf.active = not has_low  # QuadriFlow settings are ignored with a provided low-poly
+        qf.prop(s, "target_faces")
+        qf.prop(s, "voxel_mode")
         if s.voxel_mode != "NEVER":
-            box.prop(s, "voxel_resolution")
-        col = box.column(heading="Options")
+            qf.prop(s, "voxel_resolution")
+        col = qf.column(heading="Options")
         col.prop(s, "use_preserve_sharp")
         col.prop(s, "use_preserve_boundary")
         col.prop(s, "use_mesh_symmetry")
         col.prop(s, "smooth_shading")
-        box.prop(s, "seed")
+        qf.prop(s, "seed")
 
         box = layout.box()
         box.label(text="UVs", icon="UV")
-        box.prop(s, "uv_method")
-        if s.uv_method == "SMART":
-            box.prop(s, "uv_angle_limit")
-        box.prop(s, "uv_island_margin")
+        if has_low:
+            box.row().prop(s, "uv_mode", expand=True)
+        if not has_low or s.uv_mode == "GENERATE":
+            box.prop(s, "uv_method")
+            if s.uv_method == "SMART":
+                box.prop(s, "uv_angle_limit")
+            box.prop(s, "uv_island_margin")
 
         box = layout.box()
         box.label(text="Bake (Cycles)", icon="RENDER_STILL")
@@ -50,6 +62,8 @@ class VIEW3D_PT_smart_retopo(bpy.types.Panel):
         box.prop(s, "bake_margin")
         box.prop(s, "cage_extrusion")
         box.prop(s, "max_ray_distance")
+        if has_low and s.cage_extrusion == 0 and s.max_ray_distance == 0:
+            box.label(text="Auto cage assumes the low-poly hugs the surface", icon="INFO")
         box.prop(s, "device")
         box.prop(s, "output_dir")
         box.prop(s, "image_format")

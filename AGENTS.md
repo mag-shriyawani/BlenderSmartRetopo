@@ -18,7 +18,7 @@ It's intended for artists: it has an interactive UI and can also be driven by au
 | `smart_retopo/operators.py`, `props.py`, `ui.py` | The `object.smart_retopo` operator, its shared property mixin, and the sidebar panel |
 | `smart_retopo/cli.py` | Headless runner: `blender -b -P smart_retopo/cli.py -- -i in.glb -o out.glb ...` |
 | `smart_retopo/blender_manifest.toml` | **Only** source of the version and metadata. No `bl_info`. |
-| `tests/test_pipeline.py` | End-to-end test. Writes `tests/_output/result.json`. |
+| `tests/test_pipeline.py` | End-to-end tests: QuadriFlow, a provided low-poly (existing and generated UVs) and settings validation. Writes `tests/_output/result.json` and `result_low_poly.json`. |
 | `tests/ci/` | Stdlib-only checks: `check_version.py`, `check_result_schema.py` |
 | `docs/architecture.md` | How the pipeline works, and behaviour that's easy to break. **Read before changing `core/`.** |
 | `docs/result.schema.json` | Contract for the result JSON |
@@ -35,7 +35,7 @@ python3 tests/ci/check_result_schema.py        # docs/result.schema.json matches
 
 # End-to-end test (Blender on PATH, or the bpy wheel: pip install bpy && python3 tests/test_pipeline.py)
 blender -b --factory-startup --python-exit-code 1 -P tests/test_pipeline.py
-python3 tests/ci/check_result_schema.py tests/_output/result.json   # validate the result the test produced
+python3 tests/ci/check_result_schema.py tests/_output/result.json tests/_output/result_low_poly.json   # validate the results the test produced
 
 ./scripts/build.sh                             # dist/smart_retopo-<version>.zip
 ```
@@ -71,7 +71,8 @@ Removing or renaming any of these needs a `!` in the PR title (`feat!:`), or a `
 These are covered in more detail in [`docs/architecture.md`](docs/architecture.md):
 
 - Base color, roughness and metallic are baked by **temporarily swapping material outputs to emission**. Always restore them, even on failure.
-- **Source objects are hidden during the bake**, because they'd occlude AO. Don't remove that.
+- **Source objects are hidden during the bake**, because they'd occlude AO. Don't remove that. A provided low-poly is hidden too.
+- A **provided low-poly** (`low_poly_object`) is copied, never modified, and never used as a bake source. `uv_mode=EXISTING` is only valid with one.
 - QuadriFlow needs a manifold mesh. The voxel pre-pass and fallback in `retopo.py` handle that. Its face counts are approximate.
 - The **cage extrusion and ray distance** default to 1% and 5% of the bounding-box diagonal when set to 0.
 - On failure, the pipeline removes its own `_high` and `_retopo` objects. Keep the scene clean.

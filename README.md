@@ -4,8 +4,8 @@
 
 The repo implements a Blender extension that turns arbitrary meshes into low-poly, textured game-ready meshes.
 
-Selected meshes are combined together, then automatically retopologized.
-A new UV layout is generated, then new PBR textures are baked from the old geometry onto the new model using Cycles.
+Selected meshes are combined together, then automatically retopologized, or you can provide your own low-poly mesh.
+A new UV layout is generated (or the low-poly's existing UVs are kept), then new PBR textures are baked from the old geometry onto the new model using Cycles.
 
 ```mermaid
 flowchart LR

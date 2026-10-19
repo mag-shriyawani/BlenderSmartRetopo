@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Magnopus LLC
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""Pipeline step 3: Smart UV Project / Lightmap Pack + island packing."""
+"""Pipeline step 3: Smart UV Project / Lightmap Pack + island packing, or keep existing UVs."""
 
 from __future__ import annotations
 
@@ -9,8 +9,36 @@ import math
 
 import bpy
 
-from .settings import RetopoSettings
+from .settings import RetopoSettings, SmartRetopoError
 from .utils import _ensure_object_mode, _make_active
+
+
+def use_existing_uvs(obj) -> list[str]:
+    """Bake into the object's existing UVs. Returns warnings.
+
+    The render UV map (the one exporters and Cycles use) becomes the active
+    layer, which is the one the bake writes through. Other layers are kept.
+    """
+    mesh = obj.data
+    if not mesh.uv_layers:
+        raise SmartRetopoError(
+            f"Low-poly '{obj.name}' has no UV map. Unwrap it, or set UVs to Generate."
+        )
+    layer = next((u for u in mesh.uv_layers if u.active_render), mesh.uv_layers[0])
+    mesh.uv_layers.active = layer
+
+    warnings = []
+    n = len(mesh.loops)
+    if n:
+        co = [0.0] * (2 * n)
+        layer.uv.foreach_get("vector", co)
+        eps = 1e-4
+        if min(co) < -eps or max(co) > 1.0 + eps:
+            warnings.append(
+                f"UV map '{layer.name}' extends outside 0-1; those parts share texels with "
+                "other islands and bake incorrectly."
+            )
+    return warnings
 
 
 def generate_uvs(obj, s: RetopoSettings):
