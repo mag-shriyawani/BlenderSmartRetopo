@@ -74,6 +74,20 @@ Releases are automated with [release-please](https://github.com/googleapis/relea
 1. Merge PRs to `main` with [Conventional Commit](https://www.conventionalcommits.org/) titles (`feat: …`, `fix: …`). CI enforces this.
 2. release-please keeps a `chore(main): release X.Y.Z` PR open with the version bump and `CHANGELOG.md`.
 3. Merging that PR tags `vX.Y.Z`. The release workflow then builds, tests and attests the zip, uploads it with `SHA256SUMS`, and publishes the GitHub Release.
+4. The release workflow then calls `pages.yml`, which updates the Blender extension repositories on GitHub Pages. Blender users subscribed to them get the update.
+
+### Extension repositories (update channels)
+
+| Channel | URL | Contains |
+|---|---|---|
+| Stable | `https://magnopus.github.io/BlenderSmartRetopo/index.json` | The newest `vX.Y.Z` release |
+| Beta | `https://magnopus.github.io/BlenderSmartRetopo/beta/index.json` | The newest release or release candidate (`vX.Y.Z-rc.N`) |
+
+`scripts/extension_channels.py` picks the releases, and `pages.yml` runs after each release, daily, and on demand. A Blender listing holds one version per extension, so each channel serves exactly one zip.
+
+- **Release candidate:** merge a commit to `main` with the footer `Release-As: 0.3.0-rc.1`. The Release PR then proposes `0.3.0-rc.1`, and merging it publishes a GitHub pre-release into the beta channel only. Ship the final version the same way (`Release-As: 0.3.0`), so release-please doesn't pick the next version from the candidate.
+- **Pulling a release:** releases are immutable, so don't re-upload. On GitHub, edit the release and tick **Set as a pre-release**, then run **Actions > Extension repository > Run workflow** (or wait for the daily run). Both channels fall back to the previous release. To pull a release candidate, delete its GitHub release. Then ship a fixed patch.
+- **One-time setup:** Settings > Pages > Source: **GitHub Actions**.
 
 Never edit the version in `blender_manifest.toml` by hand. While on 0.x, breaking changes bump the minor version.
 

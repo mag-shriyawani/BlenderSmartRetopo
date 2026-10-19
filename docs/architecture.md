@@ -72,4 +72,5 @@ Images are saved to `output_dir`, or packed when it's empty. Then they're wired 
 
 - `smart_retopo/blender_manifest.toml` is the only place the version and metadata live; there's no `bl_info`. release-please updates `version` through a TOML updater.
 - `blender --command extension build` builds the zip, and `[build] paths_exclude_pattern` keeps `__pycache__` out. The zip includes `LICENSE`.
+- Distribution: every release is a GitHub Release with the zip, `SHA256SUMS` and a provenance attestation. `pages.yml` republishes one zip per channel as a Blender extension repository on GitHub Pages, with stable at `/index.json` and beta at `/beta/index.json`; `scripts/extension_channels.py` picks which. A Blender listing can't hold two versions of the same extension for the same Blender range, which is why each channel has exactly one.
 - The `core/` package and `cli.py` import nothing from the UI, so automation can use them without registering the add-on: `cli.py` adds the repo to `sys.path`.

@@ -19,19 +19,21 @@ It's intended for artists: it has an interactive UI and can also be driven by au
 | `smart_retopo/cli.py` | Headless runner: `blender -b -P smart_retopo/cli.py -- -i in.glb -o out.glb ...` |
 | `smart_retopo/blender_manifest.toml` | **Only** source of the version and metadata. No `bl_info`. |
 | `tests/test_pipeline.py` | End-to-end tests: QuadriFlow, a provided low-poly (existing and generated UVs) and settings validation. Writes `tests/_output/result.json` and `result_low_poly.json`. |
-| `tests/ci/` | Stdlib-only checks: `check_version.py`, `check_result_schema.py` |
+| `tests/ci/` | Stdlib-only checks: `check_version.py`, `check_result_schema.py`, and unit tests (`test_*.py`) for the CI scripts |
+| `scripts/extension_channels.py` | Picks the release for the stable and beta Blender extension repositories |
 | `docs/architecture.md` | How the pipeline works, and behaviour that's easy to break. **Read before changing `core/`.** |
 | `docs/result.schema.json` | Contract for the result JSON |
-| `.github/` | CI (`ci.yml`), releases (`release.yml`), the `setup-blender` action, Dependabot |
+| `.github/` | CI (`ci.yml`), releases (`release.yml`), extension repositories on Pages (`pages.yml`), the `setup-blender` action, Dependabot |
 
 ## Commands
 
 ```sh
-# Checks, no Blender needed (CI runs the first three)
+# Checks, no Blender needed (CI runs all but the result-schema check)
 ruff check .                                   # lint
 reuse lint                                     # every file has copyright + license info
 python3 tests/ci/check_version.py              # manifest version is valid SemVer
 python3 tests/ci/check_result_schema.py        # docs/result.schema.json matches RetopoResult
+python3 -m unittest discover -s tests/ci -p 'test_*.py'   # unit tests for the CI scripts
 
 # End-to-end test (Blender on PATH, or the bpy wheel: pip install bpy && python3 tests/test_pipeline.py)
 blender -b --factory-startup --python-exit-code 1 -P tests/test_pipeline.py

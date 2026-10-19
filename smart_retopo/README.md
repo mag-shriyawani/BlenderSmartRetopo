@@ -4,7 +4,15 @@ Combines meshes, retopologizes them with QuadriFlow (or uses a low-poly mesh you
 
 ## Install
 
-Download `smart_retopo-<version>.zip` from the repo's [Releases](https://github.com/magnopus-opensource/BlenderSmartRetopo/releases) page, then Edit > Preferences > Get Extensions > ⌄ > **Install from Disk…** and pick the zip.
+**With updates (recommended).** Add the Smart Retopo extension repository to Blender once, and it offers new versions itself:
+
+1. Edit > Preferences > Get Extensions > Repositories (⌄ menu, top right) > **+** > **Add Remote Repository**.
+2. URL: `https://magnopus-opensource.github.io/BlenderSmartRetopo/index.json`. Tick **Check for Updates on Startup**.
+3. Search for **Smart Retopo** in Get Extensions and click **Install**.
+
+To test release candidates, add `https://magnopus-opensource.github.io/BlenderSmartRetopo/beta/index.json` instead. It always has the newest build, release candidate or not. Use one of the two repositories, not both.
+
+**Manually.** Download `smart_retopo-<version>.zip` from the repo's [Releases](https://github.com/magnopus-opensource/BlenderSmartRetopo/releases) page, then Edit > Preferences > Get Extensions > ⌄ > **Install from Disk…** and pick the zip.
 
 ## Use (UI)
 
