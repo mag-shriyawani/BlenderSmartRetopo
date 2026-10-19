@@ -1,0 +1,84 @@
+# SPDX-FileCopyrightText: 2026 Magnopus LLC
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: Extension repository
+
+# Publishes the Blender extension repositories on GitHub Pages:
+#   https://magnopus.github.io/BlenderSmartRetopo/index.json        stable
+#   https://magnopus.github.io/BlenderSmartRetopo/beta/index.json   beta (includes release candidates)
+# scripts/extension_channels.py decides which release goes where.
+#
+# Runs after every release (called from release.yml), daily, and on demand.
+# To pull a release: mark it pre-release on GitHub, then run this workflow
+# (Actions > Extension repository > Run workflow). The daily run catches it otherwise.
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * *"
+
+permissions: {}
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Pick a release for each channel
+        id: pick
+        run: |
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 200 --json tagName,isDraft,isPrerelease \
+            | python3 scripts/extension_channels.py | tee -a "$GITHUB_OUTPUT"
+      - name: Download and verify the release zips
+        env:
+          STABLE: ${{ steps.pick.outputs.stable }}
+          BETA: ${{ steps.pick.outputs.beta }}
+        run: |
+          set -euo pipefail
+          fetch() {  # fetch <site dir> <tag>; an empty tag leaves the channel empty
+            local dir=$1 tag=$2 tmp
+            mkdir -p "$dir"
+            [[ -n "$tag" ]] || { echo "::warning::no release for $dir"; return 0; }
+            tmp=$(mktemp -d)
+            gh release download "$tag" --repo "$GITHUB_REPOSITORY" -p 'smart_retopo-*.zip' -p SHA256SUMS -D "$tmp"
+            (cd "$tmp" && sha256sum -c SHA256SUMS)
+            cp "$tmp"/smart_retopo-*.zip "$dir"/
+          }
+          fetch _site "$STABLE"
+          fetch _site/beta "$BETA"
+      - uses: ./.github/actions/setup-blender
+        with:
+          series: "5.2"
+      - name: Generate the repository listings
+        run: |
+          for dir in _site _site/beta; do
+            blender --command extension server-generate --repo-dir "$dir" --html
+          done
+          find _site -type f | sort
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

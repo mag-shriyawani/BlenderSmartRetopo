@@ -90,4 +90,20 @@ jobs:
       - name: Upload assets to the draft release
         run: gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY"
       - name: Publish release
-        run: gh release edit "$TAG" --draft=false --latest --repo "$GITHUB_REPOSITORY"
+        # vX.Y.Z-rc.N (any SemVer pre-release) is published as a pre-release and never
+        # becomes "latest"; the Pages workflow puts it in the beta channel only.
+        run: |
+          if [[ "$TAG" == *-* ]]; then
+            gh release edit "$TAG" --draft=false --prerelease --latest=false --repo "$GITHUB_REPOSITORY"
+          else
+            gh release edit "$TAG" --draft=false --latest --repo "$GITHUB_REPOSITORY"
+          fi
+
+  pages:
+    # Refresh the Blender extension repositories (stable + beta) on GitHub Pages.
+    needs: publish
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml
