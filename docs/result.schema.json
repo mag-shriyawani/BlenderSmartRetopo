@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/magnopus/BlenderSmartRetopo/docs/result.schema.json",
+  "title": "Smart Retopo result",
+  "description": "Result of one Smart Retopo run. Produced by RetopoResult.to_dict() (smart_retopo/core/settings.py). The operator stores it as JSON in window_manager['smart_retopo_last_result']; cli.py prints it after 'SMART_RETOPO_RESULT: ' with the extra keys ok/output/error. This is a public interface for Nodey and MCP: removing or renaming a key is a breaking change.",
+  "type": "object",
+  "required": [
+    "object_name",
+    "material_name",
+    "source_objects",
+    "source_faces",
+    "result_faces",
+    "used_voxel_remesh",
+    "images",
+    "timings",
+    "warnings"
+  ],
+  "properties": {
+    "object_name": {
+      "type": "string",
+      "description": "Name of the new low-poly object, '<base>_retopo'."
+    },
+    "material_name": {
+      "type": "string",
+      "description": "Name of the new baked material, '<base>_baked'."
+    },
+    "source_objects": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Names of the input objects that were combined."
+    },
+    "source_faces": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Face count of the combined, evaluated input."
+    },
+    "result_faces": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Face count after QuadriFlow (approximately target_faces)."
+    },
+    "used_voxel_remesh": {
+      "type": "boolean",
+      "description": "True if a voxel remesh ran before QuadriFlow (pre-pass or fallback)."
+    },
+    "images": {
+      "type": "object",
+      "description": "Baked map name to file path, or '<packed>' when output_dir was empty.",
+      "propertyNames": {
+        "enum": ["BASE_COLOR", "NORMAL", "ROUGHNESS", "METALLIC", "AO", "EMISSION"]
+      },
+      "additionalProperties": { "type": "string" }
+    },
+    "timings": {
+      "type": "object",
+      "description": "Seconds per stage. Keys present depend on how far the run got.",
+      "propertyNames": {
+        "enum": ["combine", "retopo", "uv", "bake", "total"]
+      },
+      "additionalProperties": { "type": "number", "minimum": 0 }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "ok": {
+      "type": "boolean",
+      "description": "CLI only: false if the run failed (the process also exits 1)."
+    },
+    "output": {
+      "type": "string",
+      "description": "CLI only: absolute path of the exported mesh."
+    },
+    "error": {
+      "type": "string",
+      "description": "CLI only, when ok is false: the error message. The other keys are absent in that case."
+    }
+  },
+  "additionalProperties": false
+}

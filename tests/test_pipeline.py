@@ -62,6 +62,9 @@ def main():
         assert r == {"FINISHED"}, r
         res = json.loads(bpy.context.window_manager["smart_retopo_last_result"])
         print(json.dumps(res, indent=1))
+        # Saved so tests/ci/check_result_schema.py can validate a real result.
+        with open(os.path.join(OUT, "result.json"), "w") as f:
+            json.dump(res, f, indent=1)
 
         low = bpy.data.objects[res["object_name"]]
         assert 1000 < res["result_faces"] < 4000, res["result_faces"]
