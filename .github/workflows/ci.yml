@@ -29,6 +29,8 @@ jobs:
         run: pipx run ruff==0.16.8 check --output-format github .
       - name: Manifest version
         run: python3 tests/ci/check_version.py
+      - name: Unit tests for the CI scripts
+        run: python3 -m unittest discover -s tests/ci -p 'test_*.py' -v
       - name: REUSE compliance (every file has copyright + license info)
         run: pipx run reuse==6.2.0 lint
       - name: License copies are identical
