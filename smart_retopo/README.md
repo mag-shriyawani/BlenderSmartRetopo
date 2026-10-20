@@ -4,7 +4,7 @@ Combines meshes, retopologizes them with QuadriFlow (or uses a low-poly mesh you
 
 ## Install
 
-Download `smart_retopo-<version>.zip` from the repo's [Releases](https://github.com/magnopus/BlenderSmartRetopo/releases) page, then Edit > Preferences > Get Extensions > ⌄ > **Install from Disk…** and pick the zip.
+Download `smart_retopo-<version>.zip` from the repo's [Releases](https://github.com/magnopus-opensource/BlenderSmartRetopo/releases) page, then Edit > Preferences > Get Extensions > ⌄ > **Install from Disk…** and pick the zip.
 
 ## Use (UI)
 

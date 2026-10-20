@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/magnopus/BlenderSmartRetopo/docs/result.schema.json",
+  "$id": "https://github.com/magnopus-opensource/BlenderSmartRetopo/docs/result.schema.json",
   "title": "Smart Retopo result",
   "description": "Result of one Smart Retopo run. Produced by RetopoResult.to_dict() (smart_retopo/core/settings.py). The operator stores it as JSON in window_manager['smart_retopo_last_result']; cli.py prints it after 'SMART_RETOPO_RESULT: ' with the extra keys ok/output/error. This is a public interface for Nodey and MCP: removing or renaming a key is a breaking change.",
   "type": "object",

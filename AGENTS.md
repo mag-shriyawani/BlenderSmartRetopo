@@ -7,7 +7,7 @@ Guidance for AI coding agents and new contributors. `CLAUDE.md` is a symlink to 
 **Smart Retopo** is a Blender **5.0+** extension. It turns arbitrary meshes into a low-poly, UV-mapped, textured mesh: **combine → QuadriFlow retopology → new UVs → Cycles bake** (base color, normal, roughness, metallic, AO, emission).
 It's intended for artists: it has an interactive UI and can also be driven by automation.
 
-- Repo: `magnopus/BlenderSmartRetopo`. Distribution: GitHub Releases.
+- Repo: `magnopus-opensource/BlenderSmartRetopo`. Distribution: GitHub Releases.
 - License: GPL-3.0-or-later, © Magnopus LLC.
 
 ## Map

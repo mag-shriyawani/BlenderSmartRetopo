@@ -81,8 +81,10 @@ Verify a downloaded release:
 
 ```sh
 sha256sum -c SHA256SUMS
-gh attestation verify smart_retopo-X.Y.Z.zip -R magnopus/BlenderSmartRetopo
+gh attestation verify smart_retopo-X.Y.Z.zip -R magnopus-opensource/BlenderSmartRetopo
 ```
+
+Releases v0.1.0 and v0.1.1 were built before the repo moved from the `magnopus` org, so verify those with `-R magnopus/BlenderSmartRetopo`.
 
 Supports Blender 5.0 and later. CI tests 5.0 and 5.2 LTS.
 
