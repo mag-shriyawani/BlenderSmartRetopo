@@ -57,6 +57,8 @@ def validate(result: dict, schema: dict) -> list[str]:
             errors.append(f"{key}: expected {spec['type']}, got bool")
         elif not isinstance(value, expected):
             errors.append(f"{key}: expected {spec['type']}, got {type(value).__name__}")
+        elif "enum" in spec and value not in spec["enum"]:
+            errors.append(f"{key}: {value!r} is not one of {spec['enum']}")
         elif spec["type"] == "object":
             allowed = set(spec.get("propertyNames", {}).get("enum", []))
             for k in value:
@@ -81,6 +83,9 @@ def main(argv: list[str]) -> int:
     maps = set(schema["properties"]["images"]["propertyNames"]["enum"])
     if maps != set(settings.ALL_MAPS):
         errors.append(f"images keys {sorted(maps)} != ALL_MAPS {sorted(settings.ALL_MAPS)}")
+    devices = set(schema["properties"]["bake_device"]["enum"])
+    if devices != {"", "CPU", *settings.GPU_BACKENDS}:
+        errors.append(f"bake_device values {sorted(devices)} != '', CPU and GPU_BACKENDS")
     timings = set(schema["properties"]["timings"]["propertyNames"]["enum"])
     if timings != TIMING_KEYS:
         errors.append(f"timings keys {sorted(timings)} != {sorted(TIMING_KEYS)}")

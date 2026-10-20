@@ -25,7 +25,7 @@ if "bpy" in locals():
 import bpy  # noqa: E402,F401  (kept for the reload check above)
 
 from .settings import (  # noqa: E402,F401
-    ALL_MAPS, CONVERTIBLE_TYPES, ProgressFn, RetopoResult, RetopoSettings, SmartRetopoError, Step,
+    ALL_MAPS, CONVERTIBLE_TYPES, GPU_BACKENDS, ProgressFn, RetopoResult, RetopoSettings, SmartRetopoError, Step,
 )
 from .combine import combine_meshes  # noqa: E402,F401
 from .utils import run_steps  # noqa: E402,F401

@@ -128,7 +128,7 @@ def iter_smart_retopo(objects: Iterable[bpy.types.Object],
             o.hide_set(True)
             o.hide_render = True
         try:
-            mat, images = yield from iter_bake_textures(
+            mat, images, device = yield from iter_bake_textures(
                 high, low, s, base, fraction=lambda f: 0.5 + 0.5 * f)
         finally:
             for o, h, hr in vis:
@@ -136,6 +136,9 @@ def iter_smart_retopo(objects: Iterable[bpy.types.Object],
                 o.hide_render = hr
         res.material_name = mat.name
         res.images = images
+        res.bake_device = device
+        if s.device.upper() == "GPU" and device == "CPU":
+            res.warnings.append("GPU bake requested, but Cycles found no usable GPU. Baked on CPU.")
         res.timings["bake"] = time.perf_counter() - t
     except BaseException:  # includes GeneratorExit (cancel)
         if low is not None:

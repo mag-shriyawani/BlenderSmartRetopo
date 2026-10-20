@@ -51,7 +51,7 @@ This runs without installing the add-on. Supported inputs are blend, glb/gltf, f
 
 ## Result JSON
 
-`object_name, material_name, source_objects, source_faces, result_faces, used_voxel_remesh, low_poly_object, uvs_generated, images{map: path|"<packed>"}, timings{combine,retopo,uv,bake,total}, warnings`. The full contract is `docs/result.schema.json` in the repo.
+`object_name, material_name, source_objects, source_faces, result_faces, used_voxel_remesh, low_poly_object, uvs_generated, images{map: path|"<packed>"}, bake_device, timings{combine,retopo,uv,bake,total}, warnings`. The full contract is `docs/result.schema.json` in the repo.
 
 ## Notes
 

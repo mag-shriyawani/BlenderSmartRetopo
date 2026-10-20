@@ -82,6 +82,7 @@ def test_quadriflow():
 
     low = bpy.data.objects[res["object_name"]]
     assert 1000 < res["result_faces"] < 4000, res["result_faces"]
+    assert res["bake_device"] == "CPU", res["bake_device"]
     assert res["low_poly_object"] == "" and res["uvs_generated"] is True
     assert [u.name for u in low.data.uv_layers] == ["UVMap"]
     _check_bake(res, low)
@@ -211,6 +212,25 @@ def test_steps():
     assert isinstance(res, smart_retopo.core.RetopoResult)
     assert set(res.images) == set(STEP_SETTINGS["bake_maps"])
     assert res.object_name in bpy.data.objects
+    assert res.bake_device == "CPU", res.bake_device
+
+
+def test_bake_device():
+    """The result names the device that baked. A GPU request with no usable GPU bakes on CPU and warns."""
+    objs = build_low_poly_scene()
+    res = smart_retopo.core.smart_retopo(objs, dict(STEP_SETTINGS, device="GPU"))
+    gpu_warnings = [w for w in res.warnings if "GPU" in w]
+    if res.bake_device == "CPU":  # CI and most containers have no GPU
+        assert len(gpu_warnings) == 1, res.warnings
+    else:
+        assert res.bake_device in smart_retopo.core.GPU_BACKENDS, res.bake_device
+        assert gpu_warnings == [], res.warnings
+
+    # Nothing to bake: no device was used.
+    objs = build_low_poly_scene()
+    res = smart_retopo.core.smart_retopo(objs, dict(STEP_SETTINGS, device="GPU", bake_maps=[]))
+    assert res.bake_device == "", res.bake_device
+    assert not any("GPU" in w for w in res.warnings), res.warnings
 
 
 def _assert_clean_after_abort(objs, before):
@@ -253,6 +273,7 @@ def main():
     try:
         test_steps()
         test_abort()
+        test_bake_device()
         test_quadriflow()
         test_provided_low_poly("EXISTING")
         test_provided_low_poly("GENERATE")

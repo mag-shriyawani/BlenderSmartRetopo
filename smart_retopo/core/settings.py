@@ -14,6 +14,9 @@ ALL_MAPS = ("BASE_COLOR", "NORMAL", "ROUGHNESS", "METALLIC", "AO", "EMISSION")
 
 UV_MODES = ("GENERATE", "EXISTING")
 
+# Cycles GPU backends, in the order a GPU bake tries them.
+GPU_BACKENDS = ("OPTIX", "CUDA", "HIP", "METAL", "ONEAPI")
+
 
 @dataclass
 class RetopoSettings:
@@ -71,6 +74,7 @@ class RetopoResult:
     low_poly_object: str = ""                    # provided low-poly ("" = QuadriFlow)
     uvs_generated: bool = True
     images: dict = field(default_factory=dict)   # map -> filepath or "<packed>"
+    bake_device: str = ""                        # "CPU", a GPU_BACKENDS name, or "" if nothing was baked
     timings: dict = field(default_factory=dict)
     warnings: list = field(default_factory=list)
 

@@ -9,7 +9,7 @@ import os
 
 import bpy
 
-from .settings import ALL_MAPS, ProgressFn, RetopoSettings, Step
+from .settings import ALL_MAPS, GPU_BACKENDS, ProgressFn, RetopoSettings, Step
 from .utils import _bbox_diagonal, _ensure_object_mode, _make_active, run_steps
 
 
@@ -107,16 +107,23 @@ def _ensure_source_materials(high):
 
 
 def _setup_cycles(scene, s: RetopoSettings):
+    """Switch the scene to Cycles for baking.
+
+    Returns (saved settings for _restore_cycles, the device that will bake:
+    "CPU" or the GPU_BACKENDS name in use). A GPU request uses the first
+    backend with a device, and falls back to CPU when there is none.
+    """
     saved = dict(engine=scene.render.engine)
     scene.render.engine = "CYCLES"
     cy = scene.cycles
     saved.update(samples=cy.samples, device=cy.device)
     cy.samples = max(int(s.bake_samples), 1)
     cy.device = "CPU"
+    device = "CPU"
     if s.device.upper() == "GPU":
         try:
             prefs = bpy.context.preferences.addons["cycles"].preferences
-            for backend in ("OPTIX", "CUDA", "HIP", "METAL", "ONEAPI"):
+            for backend in GPU_BACKENDS:
                 try:
                     prefs.compute_device_type = backend
                 except TypeError:
@@ -127,10 +134,11 @@ def _setup_cycles(scene, s: RetopoSettings):
                     for d in prefs.devices:
                         d.use = d.type == backend
                     cy.device = "GPU"
+                    device = backend
                     break
         except Exception:
             pass
-    return saved
+    return saved, device
 
 
 def _restore_cycles(scene, saved):
@@ -155,8 +163,12 @@ def _build_target_material(low, name):
 
 
 def bake_textures(high, low, s: RetopoSettings, base_name: str,
-                  progress: ProgressFn = None) -> tuple[bpy.types.Material, dict]:
-    """Bake every map synchronously. Returns (material, {map: path | "<packed>"})."""
+                  progress: ProgressFn = None) -> tuple[bpy.types.Material, dict, str]:
+    """Bake every map synchronously.
+
+    Returns (material, {map: path | "<packed>"}, bake device), where the bake
+    device is "CPU", a GPU_BACKENDS name, or "" when there were no maps.
+    """
     return run_steps(iter_bake_textures(high, low, s, base_name), progress)
 
 
@@ -165,13 +177,13 @@ def iter_bake_textures(high, low, s: RetopoSettings, base_name: str,
     """Step generator for the bake (see ``Step``). Yields one bake request per map.
 
     ``fraction`` maps this step's own progress (0..1) onto the caller's scale.
-    Returns (material, images). On failure or cancel the new material and
+    Returns (material, images, bake device), as ``bake_textures``. On failure or cancel the new material and
     images are removed, and source materials and Cycles settings restored.
     """
     maps = [m for m in ALL_MAPS if m in set(s.bake_maps)]
     mat, bsdf = _build_target_material(low, f"{base_name}_baked")
     if not maps:
-        return mat, {}
+        return mat, {}, ""
 
     nt = mat.node_tree
     _ensure_source_materials(high)
@@ -188,7 +200,7 @@ def iter_bake_textures(high, low, s: RetopoSettings, base_name: str,
         os.makedirs(out_dir, exist_ok=True)
 
     scene = bpy.context.scene
-    saved = _setup_cycles(scene, s)
+    saved, device = _setup_cycles(scene, s)
     _ensure_object_mode()
     high.hide_set(False)
     high.hide_render = False
@@ -260,7 +272,7 @@ def iter_bake_textures(high, low, s: RetopoSettings, base_name: str,
         _restore_cycles(scene, saved)
 
     _wire_material(nt, bsdf, nodes)
-    return mat, images
+    return mat, images, device
 
 
 def _wire_material(nt, bsdf, nodes):

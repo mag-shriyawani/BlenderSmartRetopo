@@ -14,6 +14,7 @@
     "low_poly_object",
     "uvs_generated",
     "images",
+    "bake_device",
     "timings",
     "warnings"
   ],
@@ -60,6 +61,11 @@
         "enum": ["BASE_COLOR", "NORMAL", "ROUGHNESS", "METALLIC", "AO", "EMISSION"]
       },
       "additionalProperties": { "type": "string" }
+    },
+    "bake_device": {
+      "type": "string",
+      "enum": ["", "CPU", "OPTIX", "CUDA", "HIP", "METAL", "ONEAPI"],
+      "description": "The device Cycles baked on: 'CPU', or the GPU backend in use. '' when no maps were baked. With device GPU and no usable GPU, the bake runs on CPU, this is 'CPU' and warnings says so."
     },
     "timings": {
       "type": "object",
