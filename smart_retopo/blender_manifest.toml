@@ -4,7 +4,7 @@
 schema_version = "1.0.0"
 
 id = "smart_retopo"
-version = "0.1.1"
+version = "0.2.0"
 name = "Smart Retopo"
 tagline = "Combine, QuadriFlow retopologize, unwrap and bake meshes"
 maintainer = "Magnopus"
