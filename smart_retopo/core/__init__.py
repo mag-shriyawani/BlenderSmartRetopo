@@ -18,8 +18,8 @@ Pipeline (one module per step):
 
 if "bpy" in locals():
     import importlib
-    from . import settings, utils, combine, retopo, uv, bake, pipeline
-    for _m in (settings, utils, combine, retopo, uv, bake, pipeline):
+    from . import settings, utils, combine, retopo, uv, bake, pipeline, udims
+    for _m in (settings, utils, combine, retopo, uv, bake, pipeline, udims):
         importlib.reload(_m)
 
 import bpy  # noqa: E402,F401  (kept for the reload check above)
@@ -33,3 +33,4 @@ from .retopo import retopologize, voxel_remesh  # noqa: E402,F401
 from .uv import generate_uvs  # noqa: E402,F401
 from .bake import BAKE_DEFS, IMAGE_EXT, bake_textures, iter_bake_textures  # noqa: E402,F401
 from .pipeline import iter_smart_retopo, smart_retopo  # noqa: E402,F401
+from .udims import setup_udims

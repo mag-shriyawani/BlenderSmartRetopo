@@ -86,6 +86,15 @@ class VIEW3D_PT_smart_retopo(bpy.types.Panel):
         row.scale_y = 1.5
         row.operator("object.smart_retopo", icon="MOD_REMESH")
 
+        """Creating a new section for UDIMs"""
+        box = layout.box()
+        box.label(text="UDIMs", icon="UV")
+        tiles = box.column(heading="Options")
+        tiles.prop(s, "use_udims")
+        if s.use_udims:
+            tiles.prop(s, "target_udims")
+            tiles.operator("object.smart_retopo_udims", icon="UV")
+
 
 def menu_func(self, context):
     self.layout.operator("object.smart_retopo", icon="MOD_REMESH")

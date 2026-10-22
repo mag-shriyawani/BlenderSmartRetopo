@@ -7,6 +7,7 @@ import bpy
 
 from . import core
 from .props import PROP_NAMES, SmartRetopoProps
+#from .core.udims import setup_udims
 
 
 class SMARTRETOPO_PG_settings(SmartRetopoProps, bpy.types.PropertyGroup):
@@ -246,5 +247,46 @@ class OBJECT_OT_smart_retopo(SmartRetopoProps, bpy.types.Operator):
         _store_result(self, context, res)
         return {"FINISHED"}
 
+class OBJECT_OT_smart_retopo_udims(SmartRetopoProps, bpy.types.Operator):
+    """ Distribute existing UV islands amongst several UDIM tiles """
 
-classes = (SMARTRETOPO_PG_settings, OBJECT_OT_smart_retopo)
+    bl_idname = "object.smart_retopo_udims"
+    bl_label = "Set up UDIMs"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return obj is not None and obj.type == "MESH" and bool(obj.data.uv_layers)
+
+    def invoke(self, context, event):
+        panel = context.scene.smart_retopo
+        for name in PROP_NAMES:
+            if not self.properties.is_property_set(name):
+                setattr(self, name, getattr(panel, name))
+        return self.execute(context)
+
+    def execute(self, context):
+        obj = context.active_object
+
+        try:
+            res = core.setup_udims(obj, self.to_settings())
+        except (RuntimeError, core.SmartRetopoError) as exc:
+            self.report({"ERROR"}, str(exc))
+            return {"CANCELLED"}
+
+        # Making UDIM tiles visible in the UV editor
+        rows = (self.target_udims - 1) // 10 + 1
+        cols = min(self.target_udims, 10)
+        for window in context.window_manager.windows:
+            for area in window.screen.areas:
+                if area.type == "IMAGE_EDITOR":
+                    area.spaces.active.uv_editor.tile_grid_shape = (cols, rows)
+                    area.tag_redraw()
+
+        tiles = sorted(res)
+        self.report({"INFO"}, f"{len(tiles)} UDIM tiles: {tiles[0]}-{tiles[-1]}")
+        return {"FINISHED"}
+
+
+classes = (SMARTRETOPO_PG_settings, OBJECT_OT_smart_retopo, OBJECT_OT_smart_retopo_udims)

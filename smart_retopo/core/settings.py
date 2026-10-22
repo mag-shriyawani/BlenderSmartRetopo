@@ -54,6 +54,10 @@ class RetopoSettings:
     keep_high_poly: bool = False
     hide_sources: bool = True
 
+    # UDIMs
+    use_udims: bool = False
+    target_udims: int = 5               # Amount of tiles to set up UDIMs on
+
     @classmethod
     def from_dict(cls, d: dict) -> "RetopoSettings":
         known = {f for f in cls.__dataclass_fields__}

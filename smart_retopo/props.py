@@ -73,6 +73,9 @@ class SmartRetopoProps:
     keep_high_poly: BoolProperty(name="Keep Combined High-Poly", default=False)
     hide_sources: BoolProperty(name="Hide Sources", default=True)
 
+    use_udims: BoolProperty(name="Set Up UDIMs", default = False)
+    target_udims: IntProperty(name="Target # UDIM Tiles", default = 5, min=2, soft_max = 100)
+
     def to_settings(self) -> core.RetopoSettings:
         d = {k: getattr(self, k) for k in core.RetopoSettings.__dataclass_fields__ if hasattr(self, k)}
         d["bake_maps"] = tuple(sorted(self.bake_maps))
